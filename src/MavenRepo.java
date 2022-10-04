@@ -18,9 +18,10 @@ import java.time.Duration;
 
 public class MavenRepo {
 
-    public void searchMaven() {
+    public String searchMaven() {
         HttpClient client = null;
         HttpRequest request = null;
+        String responseString = null;
         
         try {
             client = HttpClient.newBuilder()
@@ -35,12 +36,13 @@ public class MavenRepo {
 
             HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
 
-            System.out.println(response.body());
+            responseString = response.body();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } 
         finally { }
+        return responseString;
     }
 }
