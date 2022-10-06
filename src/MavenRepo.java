@@ -6,11 +6,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
- * Class representing the Maven central repo, able to search the Maven central repository using the
+ * Class representing the Maven central repo, able to search the Maven central
+ * repository using the
  * provided REST api.
  * 
  * @author Cameron Perdue
- * created on 09/29/2022
+ *         created on 09/29/2022
  */
 
 public class MavenRepo {
@@ -21,7 +22,7 @@ public class MavenRepo {
         BufferedReader reader = null;
         StringBuilder sb = null;
         String line = null;
-        
+
         try {
             serverAddress = new URL("https://search.maven.org/solrsearch/select?q=guice&rows=20&wt=xml");
             connection = null;
@@ -53,5 +54,5 @@ public class MavenRepo {
             connection = null;
         }
     }
-    
+
 }
