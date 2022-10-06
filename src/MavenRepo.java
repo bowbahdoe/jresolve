@@ -18,11 +18,12 @@ import java.time.Duration;
 
 public class MavenRepo {
 
-    public String searchMaven() {
+    public String searchMaven(String searchItem) {
         HttpClient client = null;
         HttpRequest request = null;
         String responseString = null;
-        
+        StringBuilder uri = null;
+
         try {
             client = HttpClient.newBuilder()
                 .version(Version.HTTP_1_1)
@@ -30,8 +31,13 @@ public class MavenRepo {
                 .connectTimeout(Duration.ofSeconds(20))
                 .build();
             
+            uri = new StringBuilder();
+            uri.append("https://search.maven.org/solrsearch/select?q=");
+            uri.append(searchItem);
+            uri.append("&rows=20&wt=xml");
+            
             request = HttpRequest.newBuilder()
-                .uri(URI.create("https://search.maven.org/solrsearch/select?q=guice&rows=20&wt=xml"))
+                .uri(URI.create(uri.toString()))
                 .build();
 
             HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
