@@ -10,9 +10,8 @@ import java.time.Duration;
 
 /**
  * Class representing the Maven central repo, able to search the Maven central
- * repository using the
- * provided REST api.
- * 
+ * repository using the provided REST api.
+ *
  * @author Cameron Perdue
  *         created on 09/29/2022
  */
