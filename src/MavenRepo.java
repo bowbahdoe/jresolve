@@ -18,6 +18,11 @@ import java.time.Duration;
 
 public class MavenRepo {
 
+    /**
+     * Search the Maven central repository for some artifact name.
+     * @param searchItem String of what to search maven for.
+     * @return String of xml response from maven central.
+     */
     public String searchMaven(String searchItem) {
         HttpClient client = null;
         HttpRequest request = null;
