@@ -8,6 +8,6 @@ public class Main {
         }
 
         MavenRepo repo = new MavenRepo();
-        System.out.println((repo.searchMaven(searchItem)));
+        System.out.println((repo.search(searchItem)));
     }
 }
