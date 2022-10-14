@@ -1,0 +1,1 @@
+package dev.mccue.resolve.maven;
