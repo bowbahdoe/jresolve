@@ -2,6 +2,7 @@ package dev.mccue.resolve.maven;
 
 import dev.mccue.resolve.core.*;
 import dev.mccue.resolve.core.Module;
+import dev.mccue.resolve.util.LL;
 import dev.mccue.resolve.util.Tuple2;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -28,7 +29,7 @@ public final class PomParser extends DefaultHandler {
         this.paths = paths;
         var handler = HANDLER_MAP.getOrDefault(
                 this.paths,
-                HANDLER_MAP.get(paths.tail.prepend("*"))
+                HANDLER_MAP.get(paths.tail().prepend("*"))
         );
 
         this.handlers = this.handlers.prepend(Optional.ofNullable(handler));
@@ -68,8 +69,8 @@ public final class PomParser extends DefaultHandler {
         var handlerOpt = handlers.headOption().flatMap(Function.identity());
         // Calling endElement implies startElement was called,
         // which means a non-empty paths and handlers
-        this.paths = this.paths.assumeNotEmpty().tail;
-        this.handlers = this.handlers.assumeNotEmpty().tail;
+        this.paths = this.paths.assumeNotEmpty().tail();
+        this.handlers = this.handlers.assumeNotEmpty().tail();
 
         handlerOpt.ifPresent(handler -> {
             switch (handler) {
@@ -85,57 +86,7 @@ public final class PomParser extends DefaultHandler {
         characterBuffer.setLength(0);
     }
 
-    /*
-     * Basic Immutable Linked List Implementation.
-     */
-    private sealed interface LL<T> {
-        record Nil<T>() implements LL<T> {
-            @Override
-            public Optional<T> headOption() {
-                return Optional.empty();
-            }
-        }
-        record Cons<T>(T head, LL<T> tail) implements LL<T> {
-            public Cons {
-                Objects.requireNonNull(head, "head must not be null");
-                Objects.requireNonNull(tail, "tail must not be null");
-            }
-
-            @Override
-            public Optional<T> headOption() {
-                return Optional.of(head);
-            }
-        }
-
-        default LL.Cons<T> prepend(T first) {
-            return new LL.Cons<>(first, this);
-        }
-
-        Optional<T> headOption();
-
-        static <T> LL<T> fromJavaList(List<T> list) {
-            LL<T> head = new LL.Nil<>();
-            for (int i = list.size() - 1; i >= 0; i--) {
-                head = new LL.Cons<>(
-                        list.get(i),
-                        head
-                );
-            }
-            return head;
-        }
-
-        default Cons<T> assumeNotEmpty() {
-            if (!(this instanceof LL.Cons<T> cons)) {
-                throw new IllegalStateException("Assumed to be not empty");
-            }
-            else {
-                return cons;
-            }
-        }
-    }
-
-
-    public final class State {
+    private final class State {
         String groupId = "";
         Optional<String> artifactIdOpt = Optional.empty();
         String version = "";
@@ -188,7 +139,7 @@ public final class PomParser extends DefaultHandler {
 
         final ArrayList<Profile> profiles = new ArrayList<>();
 
-        public Project project() {
+        Project project() {
             final Optional<String> groupIdOpt;
             if (!groupId.isEmpty()) {
                 groupIdOpt = Optional.of(groupId);
@@ -729,5 +680,9 @@ public final class PomParser extends DefaultHandler {
                         Handler::path,
                         handler -> handler
                 ));
+    }
+
+    public Project project() {
+        return this.state.project();
     }
 }
