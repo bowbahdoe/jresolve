@@ -135,7 +135,7 @@ public final class PomParserTest {
                 pomParser
         );
 
-        var project = pomParser.state.project();
+        var project = pomParser.project();
 
         assertEquals(new Organization("dev.mccue"), project.module().organization());
         assertEquals(new ModuleName("resolve"), project.module().name());
