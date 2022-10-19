@@ -4,10 +4,7 @@ import dev.mccue.resolve.doc.Coursier;
 import dev.mccue.resolve.util.Tuple2;
 import dev.mccue.resolve.util.Tuple4;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -20,7 +17,7 @@ public final class MinimizedExclusions {
 
     private final ExclusionData exclusionData;
 
-    public MinimizedExclusions(ExclusionData exclusionData) {
+    private MinimizedExclusions(ExclusionData exclusionData) {
         this.hash = 0;
         this.exclusionData = Objects.requireNonNull(
                 exclusionData,
@@ -29,13 +26,13 @@ public final class MinimizedExclusions {
     }
 
     public static MinimizedExclusions of(
-            Set<Tuple2<Organization, ModuleName>> exclusions
+            Set<Exclusion> exclusions
     ) {
         return of(List.copyOf(exclusions));
     }
 
     public static MinimizedExclusions of(
-            List<Tuple2<Organization, ModuleName>> exclusions
+            List<Exclusion> exclusions
     ) {
         if (exclusions.isEmpty()) {
             return ZERO;
@@ -43,17 +40,17 @@ public final class MinimizedExclusions {
 
         var excludeByOrg0 = new HashSet<Organization>();
         var excludeByName0 = new HashSet<ModuleName>();
-        var remaining0 = new HashSet<Tuple2<Organization, ModuleName>>();
+        var remaining0 = new HashSet<Exclusion>();
 
         for (var exclusion : exclusions) {
-            if (Organization.ALL.equals(exclusion.first())) {
-                if (ModuleName.ALL.equals(exclusion.second())) {
+            if (Organization.ALL.equals(exclusion.organization())) {
+                if (ModuleName.ALL.equals(exclusion.moduleName())) {
                     return ONE;
                 } else {
-                    excludeByName0.add(exclusion.second());
+                    excludeByName0.add(exclusion.moduleName());
                 }
-            } else if (ModuleName.ALL.equals(exclusion.second())) {
-                excludeByOrg0.add(exclusion.first());
+            } else if (ModuleName.ALL.equals(exclusion.moduleName())) {
+                excludeByOrg0.add(exclusion.organization());
             } else {
                 remaining0.add(exclusion);
             }
@@ -62,8 +59,12 @@ public final class MinimizedExclusions {
         return new MinimizedExclusions(new ExcludeSpecific(
                 Set.copyOf(excludeByOrg0),
                 Set.copyOf(excludeByName0),
-                Set.copyOf(remaining0)
-        ));
+                remaining0.stream()
+                        .filter(exclusion ->
+                                !excludeByOrg0.contains(exclusion.organization())
+                                    && !excludeByName0.contains(exclusion.moduleName()))
+                        .collect(Collectors.toUnmodifiableSet()))
+        );
     }
 
     public boolean shouldInclude(Organization organization, ModuleName moduleName) {
@@ -109,7 +110,7 @@ public final class MinimizedExclusions {
     public Tuple4<Boolean,
             Set<Organization>,
             Set<ModuleName>,
-            Set<Tuple2<Organization, ModuleName>>
+            Set<Exclusion>
             > partitioned() {
         return this.exclusionData.partitioned();
     }
@@ -123,14 +124,14 @@ public final class MinimizedExclusions {
         return this.exclusionData.subsetOf(other.exclusionData);
     }
 
-    public Set<Tuple2<Organization, ModuleName>> toSet() {
+    public Set<Exclusion> toSet() {
         return this.exclusionData.toSet();
     }
 
     public sealed interface ExclusionData {
         boolean shouldInclude(
                 Organization organization,
-                ModuleName module
+                ModuleName moduleName
         );
 
         ExclusionData join(ExclusionData other);
@@ -139,7 +140,7 @@ public final class MinimizedExclusions {
         Tuple4<Boolean,
                 Set<Organization>,
                 Set<ModuleName>,
-                Set<Tuple2<Organization, ModuleName>>
+                Set<Exclusion>
                 > partitioned();
 
         ExclusionData map(Function<String, String> f);
@@ -148,14 +149,14 @@ public final class MinimizedExclusions {
 
         boolean subsetOf(ExclusionData other);
 
-        Set<Tuple2<Organization, ModuleName>> toSet();
+        Set<Exclusion> toSet();
     }
 
     public enum ExcludeNone implements ExclusionData {
         INSTANCE;
 
         @Override
-        public boolean shouldInclude(Organization organization, ModuleName module) {
+        public boolean shouldInclude(Organization organization, ModuleName moduleName) {
             return true;
         }
 
@@ -170,7 +171,7 @@ public final class MinimizedExclusions {
         }
 
         @Override
-        public Tuple4<Boolean, Set<Organization>, Set<ModuleName>, Set<Tuple2<Organization, ModuleName>>> partitioned() {
+        public Tuple4<Boolean, Set<Organization>, Set<ModuleName>, Set<Exclusion>> partitioned() {
             return new Tuple4<>(
                     false,
                     Set.of(),
@@ -195,7 +196,7 @@ public final class MinimizedExclusions {
         }
 
         @Override
-        public Set<Tuple2<Organization, ModuleName>> toSet() {
+        public Set<Exclusion> toSet() {
             return Set.of();
         }
 
@@ -210,13 +211,13 @@ public final class MinimizedExclusions {
         INSTANCE;
 
         @Override
-        public boolean shouldInclude(Organization organization, ModuleName module) {
+        public boolean shouldInclude(Organization organization, ModuleName moduleName) {
             return false;
         }
 
         @Override
         public ExclusionData join(ExclusionData other) {
-            return ExcludeAll.INSTANCE;
+            return this;
         }
 
         @Override
@@ -225,7 +226,7 @@ public final class MinimizedExclusions {
         }
 
         @Override
-        public Tuple4<Boolean, Set<Organization>, Set<ModuleName>, Set<Tuple2<Organization, ModuleName>>> partitioned() {
+        public Tuple4<Boolean, Set<Organization>, Set<ModuleName>, Set<Exclusion>> partitioned() {
             return new Tuple4<>(
                     true,
                     Set.of(),
@@ -250,8 +251,8 @@ public final class MinimizedExclusions {
         }
 
         @Override
-        public Set<Tuple2<Organization, ModuleName>> toSet() {
-            return Set.of(new Tuple2<>(Organization.ALL, ModuleName.ALL));
+        public Set<Exclusion> toSet() {
+            return Set.of(new Exclusion(Organization.ALL, ModuleName.ALL));
         }
 
         @Override
@@ -262,42 +263,129 @@ public final class MinimizedExclusions {
 
     public record ExcludeSpecific(
             Set<Organization> byOrg,
-            Set<ModuleName> byModule,
-            Set<Tuple2<Organization, ModuleName>> specific
+            Set<ModuleName> byModuleName,
+            Set<Exclusion> specific
     ) implements ExclusionData {
         public ExcludeSpecific(
                 Set<Organization> byOrg,
-                Set<ModuleName> byModule,
-                Set<Tuple2<Organization, ModuleName>> specific
+                Set<ModuleName> byModuleName,
+                Set<Exclusion> specific
         ) {
             this.byOrg = Set.copyOf(byOrg);
-            this.byModule = Set.copyOf(byModule);
+            this.byModuleName = Set.copyOf(byModuleName);
             this.specific = Set.copyOf(specific);
         }
 
         @Override
-        public boolean shouldInclude(Organization organization, ModuleName module) {
+        public boolean shouldInclude(Organization organization, ModuleName moduleName) {
             return !this.byOrg.contains(organization)
-                    && !this.byModule.contains(module)
-                    && !this.specific.contains(new Tuple2<>(organization, module));
+                    && !this.byModuleName.contains(moduleName)
+                    && !this.specific.contains(new Exclusion(organization, moduleName));
         }
 
         @Override
         public ExclusionData join(ExclusionData other) {
-            return null;
+            return switch (other) {
+                case ExcludeNone __ -> this;
+                case ExcludeAll all -> all;
+                case ExcludeSpecific specific -> {
+                    var otherByOrg = specific.byOrg;
+                    var otherByModuleName = specific.byModuleName;
+                    var otherSpecific = specific.specific;
+
+                    var joinedByOrg = new HashSet<Organization>();
+                    joinedByOrg.addAll(this.byOrg);
+                    joinedByOrg.addAll(otherByOrg);
+
+                    var joinedByModule = new HashSet<ModuleName>();
+                    joinedByModule.addAll(this.byModuleName);
+                    joinedByModule.addAll(otherByModuleName);
+
+                    var joinedSpecific = new HashSet<Exclusion>();
+                    this.specific
+                            .stream()
+                            .filter(exclusion ->
+                                    !otherByOrg.contains(exclusion.organization()) &&
+                                        !otherByModuleName.contains(exclusion.moduleName()))
+                            .forEach(joinedSpecific::add);
+
+                    otherSpecific
+                            .stream()
+                            .filter(exclusion ->
+                                    !byOrg.contains(exclusion.organization()) &&
+                                            !byModuleName.contains(exclusion.moduleName()))
+                            .forEach(joinedSpecific::add);
+
+                    yield new ExcludeSpecific(
+                            Set.copyOf(joinedByOrg),
+                            Set.copyOf(joinedByModule),
+                            Set.copyOf(joinedSpecific)
+                    );
+                }
+            };
         }
 
         @Override
         public ExclusionData meet(ExclusionData other) {
-            return null;
+            return switch (other) {
+                case ExcludeNone __ -> this;
+                case ExcludeAll all -> all;
+                case ExcludeSpecific excludeSpecific -> {
+                    var otherByOrg = excludeSpecific.byOrg;
+                    var otherByModule = excludeSpecific.byModuleName;
+                    var otherSpecific = excludeSpecific.specific;
+
+                    var metByOrg = byOrg.stream()
+                            .filter(otherByOrg::contains)
+                            .collect(Collectors.toUnmodifiableSet());
+
+                    var metByModule = byModuleName.stream()
+                            .filter(otherByModule::contains)
+                            .collect(Collectors.toUnmodifiableSet());
+
+                    var metSpecific = new HashSet<Exclusion>();
+                    specific.stream()
+                            .filter(exclusion -> {
+                                var org = exclusion.organization();
+                                var moduleName = exclusion.moduleName();
+                                return otherByOrg.contains(org) ||
+                                        otherByModule.contains(moduleName) ||
+                                        otherSpecific.contains(exclusion);
+                            })
+                            .forEach(metSpecific::add);
+
+                    otherSpecific.stream()
+                            .filter(exclusion -> {
+                                var org = exclusion.organization();
+                                var moduleName = exclusion.moduleName();
+                                return byOrg.contains(org) ||
+                                        byModuleName.contains(moduleName) ||
+                                        specific.contains(exclusion);
+                            })
+                            .forEach(metSpecific::add);
+
+                    if (metByOrg.isEmpty() && metByModule.isEmpty() && metSpecific.isEmpty()) {
+                        yield ExcludeNone.INSTANCE;
+                    }
+                    else {
+                        yield new ExcludeSpecific(
+                                metByOrg,
+                                metByModule,
+                                Set.copyOf(metSpecific)
+                        );
+                    }
+
+
+                }
+            };
         }
 
         @Override
-        public Tuple4<Boolean, Set<Organization>, Set<ModuleName>, Set<Tuple2<Organization, ModuleName>>> partitioned() {
+        public Tuple4<Boolean, Set<Organization>, Set<ModuleName>, Set<Exclusion>> partitioned() {
             return new Tuple4<>(
                     false,
                     byOrg,
-                    byModule,
+                    byModuleName,
                     specific
             );
         }
@@ -308,13 +396,13 @@ public final class MinimizedExclusions {
                     byOrg.stream()
                             .map(org -> org.map(f))
                             .collect(Collectors.toUnmodifiableSet()),
-                    byModule.stream()
-                            .map(module -> module.map(f))
+                    byModuleName.stream()
+                            .map(moduleName -> moduleName.map(f))
                             .collect(Collectors.toUnmodifiableSet()),
                     specific.stream()
-                            .map(orgAndModule -> new Tuple2<>(
-                                    orgAndModule.first().map(f),
-                                    orgAndModule.second().map(f)
+                            .map(exclusion -> new Exclusion(
+                                    exclusion.organization().map(f),
+                                    exclusion.moduleName().map(f)
                             ))
                             .collect(Collectors.toUnmodifiableSet())
             );
@@ -322,7 +410,7 @@ public final class MinimizedExclusions {
 
         @Override
         public int size() {
-            return byOrg.size() + byModule().size() + specific.size();
+            return byOrg.size() + byModuleName().size() + specific.size();
         }
 
         @Override
@@ -332,19 +420,19 @@ public final class MinimizedExclusions {
                 case ExcludeAll __ -> false; // This seems wrong
                 case ExcludeSpecific excludeSpecific ->
                         excludeSpecific.byOrg.containsAll(byOrg)
-                        && excludeSpecific.byModule.containsAll(byModule)
+                        && excludeSpecific.byModuleName.containsAll(byModuleName)
                         && excludeSpecific.specific.containsAll(specific);
             };
         }
 
         @Override
-        public Set<Tuple2<Organization, ModuleName>> toSet() {
-            var set = new HashSet<Tuple2<Organization, ModuleName>>();
+        public Set<Exclusion> toSet() {
+            var set = new HashSet<Exclusion>();
             byOrg.stream()
-                    .map(org -> new Tuple2<>(org, ModuleName.ALL))
+                    .map(org -> new Exclusion(org, ModuleName.ALL))
                     .forEach(set::add);
-            byModule.stream()
-                    .map(module -> new Tuple2<>(Organization.ALL, module))
+            byModuleName.stream()
+                    .map(moduleName -> new Exclusion(Organization.ALL, moduleName))
                     .forEach(set::add);
             set.addAll(specific);
 
@@ -354,8 +442,10 @@ public final class MinimizedExclusions {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof MinimizedExclusions minimizedExclusions &&
-                this.exclusionData.equals(minimizedExclusions.exclusionData);
+        return (this == obj) || (
+                obj instanceof MinimizedExclusions minimizedExclusions &&
+                this.exclusionData.equals(minimizedExclusions.exclusionData)
+        );
     }
 
     @Override

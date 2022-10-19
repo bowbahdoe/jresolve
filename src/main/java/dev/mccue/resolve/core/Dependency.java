@@ -69,7 +69,7 @@ public record Dependency(
             Module module,
             String version,
             Configuration configuration,
-            Set<Tuple2<Organization, ModuleName>> exclusions,
+            Set<Exclusion> exclusions,
             Attributes attributes,
             boolean optional,
             boolean transitive

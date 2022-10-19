@@ -115,7 +115,7 @@ public final class PomParser extends DefaultHandler {
         Configuration dependencyScope = Configuration.EMPTY;
         Type dependencyType = Type.EMPTY;
         Classifier dependencyClassifier = Classifier.EMPTY;
-        final HashSet<Tuple2<Organization, ModuleName>> dependencyExclusions = new HashSet<>();
+        final HashSet<Exclusion> dependencyExclusions = new HashSet<>();
 
         Organization dependencyExclusionGroupId = Organization.ALL;
         ModuleName dependencyExclusionArtifactId = ModuleName.ALL;
@@ -349,7 +349,7 @@ public final class PomParser extends DefaultHandler {
                     @Override
                     public void end(State state) {
                         state.dependencyExclusions.add(
-                               new Tuple2<>(
+                               new Exclusion(
                                        state.dependencyExclusionGroupId,
                                        state.dependencyExclusionArtifactId
                                )
