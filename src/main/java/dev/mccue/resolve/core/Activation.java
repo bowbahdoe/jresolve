@@ -4,6 +4,9 @@ import dev.mccue.resolve.doc.Coursier;
 import dev.mccue.resolve.doc.Incomplete;
 import dev.mccue.resolve.util.Tuple2;
 
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
+import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

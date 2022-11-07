@@ -137,7 +137,8 @@ public final class MinimizedExclusions {
         ExclusionData join(ExclusionData other);
         ExclusionData meet(ExclusionData other);
 
-        Tuple4<Boolean,
+        Tuple4<
+                Boolean,
                 Set<Organization>,
                 Set<ModuleName>,
                 Set<Exclusion>
@@ -328,8 +329,8 @@ public final class MinimizedExclusions {
         @Override
         public ExclusionData meet(ExclusionData other) {
             return switch (other) {
-                case ExcludeNone __ -> this;
-                case ExcludeAll all -> all;
+                case ExcludeNone none -> none;
+                case ExcludeAll __ -> this;
                 case ExcludeSpecific excludeSpecific -> {
                     var otherByOrg = excludeSpecific.byOrg;
                     var otherByModule = excludeSpecific.byModuleName;
@@ -459,5 +460,12 @@ public final class MinimizedExclusions {
         else {
             return this.hash;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "MinimizedExclusions[" +
+                "exclusionData=" + exclusionData +
+                ']';
     }
 }
