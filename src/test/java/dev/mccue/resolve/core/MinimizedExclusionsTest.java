@@ -10,12 +10,12 @@ import static org.junit.jupiter.api.Assertions.*;
 public final class MinimizedExclusionsTest {
     @Test
     public void emptyExclusionsToSet() {
-        assertEquals(MinimizedExclusions.ZERO.toSet(), Set.of());
+        assertEquals(MinimizedExclusions.NONE.toSet(), Set.of());
     }
 
     @Test
     public void allExclusionsToSet() {
-        assertEquals(MinimizedExclusions.ONE.toSet(), Set.of(
+        assertEquals(MinimizedExclusions.ALL.toSet(), Set.of(
                 new Exclusion(Organization.ALL, ModuleName.ALL)
         ));
     }
@@ -92,14 +92,14 @@ public final class MinimizedExclusionsTest {
 
     @Test
     public void excludeAllExcludesAll() {
-        assertFalse(MinimizedExclusions.ONE.shouldInclude(new Organization("facebook"), new ModuleName("metaverse")));
-        assertFalse(MinimizedExclusions.ONE.shouldInclude(new Organization("abc"), new ModuleName("def")));
+        assertFalse(MinimizedExclusions.ALL.shouldInclude(new Organization("facebook"), new ModuleName("metaverse")));
+        assertFalse(MinimizedExclusions.ALL.shouldInclude(new Organization("abc"), new ModuleName("def")));
     }
 
     @Test
     public void excludeNoneExcludesNone() {
-        assertTrue(MinimizedExclusions.ZERO.shouldInclude(new Organization("facebook"), new ModuleName("metaverse")));
-        assertTrue(MinimizedExclusions.ZERO.shouldInclude(new Organization("abc"), new ModuleName("def")));
+        assertTrue(MinimizedExclusions.NONE.shouldInclude(new Organization("facebook"), new ModuleName("metaverse")));
+        assertTrue(MinimizedExclusions.NONE.shouldInclude(new Organization("abc"), new ModuleName("def")));
     }
 
     @Test
@@ -138,20 +138,20 @@ public final class MinimizedExclusionsTest {
     @Test
     public void meetWithNone() {
         assertEquals(
-                MinimizedExclusions.ZERO,
+                MinimizedExclusions.NONE,
                 MinimizedExclusions.of(List.of(
                         new Exclusion(new Organization("abc"), new ModuleName("def"))
-                )).meet(MinimizedExclusions.ZERO)
+                )).meet(MinimizedExclusions.NONE)
         );
 
         assertEquals(
-                MinimizedExclusions.ZERO,
-                MinimizedExclusions.ONE.meet(MinimizedExclusions.ZERO)
+                MinimizedExclusions.NONE,
+                MinimizedExclusions.ALL.meet(MinimizedExclusions.NONE)
         );
 
         assertEquals(
-                MinimizedExclusions.ZERO,
-                MinimizedExclusions.ZERO.meet(MinimizedExclusions.ZERO)
+                MinimizedExclusions.NONE,
+                MinimizedExclusions.NONE.meet(MinimizedExclusions.NONE)
         );
     }
 }

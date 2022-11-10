@@ -1,7 +1,6 @@
 package dev.mccue.resolve.core;
 
 import dev.mccue.resolve.doc.Coursier;
-import dev.mccue.resolve.util.Tuple2;
 import dev.mccue.resolve.util.Tuple4;
 
 import java.util.*;
@@ -10,8 +9,8 @@ import java.util.stream.Collectors;
 
 @Coursier("https://github.com/coursier/coursier/blob/f5f0870/modules/core/shared/src/main/scala/coursier/core/MinimizedExclusions.scala")
 public final class MinimizedExclusions {
-    static final MinimizedExclusions ZERO = new MinimizedExclusions(ExcludeNone.INSTANCE);
-    static final MinimizedExclusions ONE = new MinimizedExclusions(ExcludeAll.INSTANCE);
+    static final MinimizedExclusions NONE = new MinimizedExclusions(ExcludeNone.INSTANCE);
+    static final MinimizedExclusions ALL = new MinimizedExclusions(ExcludeAll.INSTANCE);
 
     private int hash;
 
@@ -35,7 +34,7 @@ public final class MinimizedExclusions {
             List<Exclusion> exclusions
     ) {
         if (exclusions.isEmpty()) {
-            return ZERO;
+            return NONE;
         }
 
         var excludeByOrg0 = new HashSet<Organization>();
@@ -45,7 +44,7 @@ public final class MinimizedExclusions {
         for (var exclusion : exclusions) {
             if (Organization.ALL.equals(exclusion.organization())) {
                 if (ModuleName.ALL.equals(exclusion.moduleName())) {
-                    return ONE;
+                    return ALL;
                 } else {
                     excludeByName0.add(exclusion.moduleName());
                 }
@@ -289,10 +288,11 @@ public final class MinimizedExclusions {
             return switch (other) {
                 case ExcludeNone __ -> this;
                 case ExcludeAll all -> all;
-                case ExcludeSpecific specific -> {
-                    var otherByOrg = specific.byOrg;
-                    var otherByModuleName = specific.byModuleName;
-                    var otherSpecific = specific.specific;
+                case ExcludeSpecific(
+                        Set<Organization> otherByOrg,
+                        Set<ModuleName> otherByModuleName,
+                        Set<Exclusion> otherSpecific
+                ) -> {
 
                     var joinedByOrg = new HashSet<Organization>();
                     joinedByOrg.addAll(this.byOrg);
@@ -331,11 +331,11 @@ public final class MinimizedExclusions {
             return switch (other) {
                 case ExcludeNone none -> none;
                 case ExcludeAll __ -> this;
-                case ExcludeSpecific excludeSpecific -> {
-                    var otherByOrg = excludeSpecific.byOrg;
-                    var otherByModule = excludeSpecific.byModuleName;
-                    var otherSpecific = excludeSpecific.specific;
-
+                case ExcludeSpecific(
+                        Set<Organization> otherByOrg,
+                        Set<ModuleName> otherByModule,
+                        Set<Exclusion> otherSpecific
+                )  -> {
                     var metByOrg = byOrg.stream()
                             .filter(otherByOrg::contains)
                             .collect(Collectors.toUnmodifiableSet());
