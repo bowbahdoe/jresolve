@@ -163,8 +163,7 @@ public final class PomParser extends DefaultHandler {
                 if (parentGroupId != null && parentArtifactId != null) {
                     parentModuleOpt = Optional.of(new Module(
                             new Organization(parentGroupId),
-                            new ModuleName(parentArtifactId),
-                            Map.of()
+                            new ModuleName(parentArtifactId)
                     ));
                 }
                 else {
@@ -205,8 +204,7 @@ public final class PomParser extends DefaultHandler {
 
             var projModule = new Module(
                     new Organization(finalGroupId),
-                    new ModuleName(artifactId),
-                    Map.of()
+                    new ModuleName(artifactId)
             );
 
 
@@ -280,8 +278,7 @@ public final class PomParser extends DefaultHandler {
                                         )),
                                         state.dependencyArtifactIdOpt.orElseThrow(() -> new RuntimeException(
                                                 "Expected an artifactId on dependency"
-                                        )),
-                                        Map.of()
+                                        ))
                                 ),
                                 state.dependencyVersion,
                                 Configuration.EMPTY,

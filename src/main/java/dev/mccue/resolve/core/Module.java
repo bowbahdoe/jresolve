@@ -12,13 +12,11 @@ import java.util.stream.Collectors;
 )
 public record Module(
         Organization organization,
-        ModuleName name,
-        Map<String, String> attributes
+        ModuleName name
 ) {
     public Module(
             Organization organization,
-            ModuleName name,
-            Map<String, String> attributes
+            ModuleName name
     ) {
         this.organization = Objects.requireNonNull(
                 organization,
@@ -28,34 +26,17 @@ public record Module(
                 name,
                 "name must not be null"
         );
-        this.attributes = Map.copyOf(Objects.requireNonNull(
-                attributes,
-                "attributes must not be null"
-        ));
     }
 
     public Module trim() {
         return new Module(
                 this.organization.map(String::trim),
-                this.name.map(String::trim),
-                this.attributes
+                this.name.map(String::trim)
         );
     }
 
-    public String attributesStr() {
-        return attributes.entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .collect(Collectors.joining(";"));
-    }
-
-    public String nameWithAttributes() {
-        return name.value() + (attributes.isEmpty() ? "" : (";" + attributesStr()));
-    }
-
     public String repr() {
-        return organization.value() + ":" + nameWithAttributes();
+        return organization.value() + ":" + name.value();
     }
 
     @Override

@@ -1,5 +1,7 @@
 package dev.mccue.resolve.maven;
 
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.regex.Pattern;
 
 public final class MavenRepository {

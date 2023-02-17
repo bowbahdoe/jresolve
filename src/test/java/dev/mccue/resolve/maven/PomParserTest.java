@@ -147,16 +147,14 @@ public final class PomParserTest {
                 new Tuple2<>(Configuration.TEST, new Dependency(
                         new Module(
                                 new Organization("org.junit.jupiter"),
-                                new ModuleName("junit-jupiter-api"),
-                                Map.of()
+                                new ModuleName("junit-jupiter-api")
                         ),
                         "5.9.0"
                 )),
                 new Tuple2<>(Configuration.TEST, new Dependency(
                         new Module(
                                 new Organization("org.junit.jupiter"),
-                                new ModuleName("junit-jupiter-params"),
-                                Map.of()
+                                new ModuleName("junit-jupiter-params")
                         ),
                         "5.9.0"
                 ))
