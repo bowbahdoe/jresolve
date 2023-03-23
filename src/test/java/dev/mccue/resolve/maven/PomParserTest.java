@@ -1,7 +1,6 @@
 package dev.mccue.resolve.maven;
 
-import dev.mccue.resolve.core.*;
-import dev.mccue.resolve.core.Module;
+import dev.mccue.resolve.*;
 import dev.mccue.resolve.util.Tuple2;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
@@ -13,7 +12,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,11 +58,11 @@ public final class PomParserTest {
                                 <groupId>org.apache.maven.plugins</groupId>
                                 <artifactId>maven-compiler-plugin</artifactId>
                                 <version>3.8.1</version>
-                                <configuration>
+                                <scope>
                                     <source>19</source>
                                     <target>19</target>
                                     <compilerArgs>--enable-preview</compilerArgs>
-                                </configuration>
+                                </scope>
                             </plugin>
                                 
                             <plugin>
@@ -99,9 +97,9 @@ public final class PomParserTest {
                                 <groupId>org.apache.maven.plugins</groupId>
                                 <artifactId>maven-surefire-plugin</artifactId>
                                 <version>3.0.0-M7</version>
-                                <configuration>
+                                <scope>
                                     <argLine>@{argLine} --enable-preview</argLine>
-                                </configuration>
+                                </scope>
                             </plugin>
                                 
                             <plugin>
@@ -135,26 +133,26 @@ public final class PomParserTest {
                 pomParser
         );
 
-        var project = pomParser.project();
+        var project = pomParser.pomInfo();
 
-        assertEquals(new Organization("dev.mccue"), project.module().organization());
-        assertEquals(new ModuleName("resolve"), project.module().name());
+        assertEquals(new Group("dev.mccue"), project.library().group());
+        assertEquals(new Artifact("resolve"), project.library().artifact());
         assertEquals("0.0.1", project.version());
         assertEquals(List.of(new Tuple2<>("project.build.sourceEncoding", "UTF-8")), project.properties());
         assertEquals(Optional.of(Type.JAR), project.packagingOpt());
 
         assertEquals(List.of(
-                new Tuple2<>(Configuration.TEST, new Dependency(
-                        new Module(
-                                new Organization("org.junit.jupiter"),
-                                new ModuleName("junit-jupiter-api")
+                new Tuple2<>(Scope.TEST, new PomDependency(
+                        new Library(
+                                new Group("org.junit.jupiter"),
+                                new Artifact("junit-jupiter-api")
                         ),
                         "5.9.0"
                 )),
-                new Tuple2<>(Configuration.TEST, new Dependency(
-                        new Module(
-                                new Organization("org.junit.jupiter"),
-                                new ModuleName("junit-jupiter-params")
+                new Tuple2<>(Scope.TEST, new PomDependency(
+                        new Library(
+                                new Group("org.junit.jupiter"),
+                                new Artifact("junit-jupiter-params")
                         ),
                         "5.9.0"
                 ))

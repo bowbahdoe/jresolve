@@ -1,13 +1,11 @@
 package dev.mccue.resolve.util;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /*
  * Basic Immutable Linked List Implementation.
  */
-public sealed interface LL<T> {
+public sealed interface LL<T> extends Iterable<T> {
     record Nil<T>() implements LL<T> {
         @Override
         public Optional<T> headOption() {
@@ -50,5 +48,28 @@ public sealed interface LL<T> {
         else {
             return cons;
         }
+    }
+
+    @Override
+    default Iterator<T> iterator() {
+        var self = this;
+        return new Iterator<T>() {
+            LL<T> head = self;
+            @Override
+            public boolean hasNext() {
+                return head instanceof LL.Cons<T>;
+            }
+
+            @Override
+            public T next() {
+                if (head instanceof LL.Cons<T> cons) {
+                    head = cons.tail;
+                    return cons.head;
+                }
+                else {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
     }
 }

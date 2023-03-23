@@ -1,11 +1,19 @@
 package dev.mccue.resolve.maven;
 
-import dev.mccue.resolve.core.*;
-import dev.mccue.resolve.core.Module;
+import dev.mccue.resolve.*;
+import dev.mccue.resolve.doc.Coursier;
 import dev.mccue.resolve.util.LL;
 import dev.mccue.resolve.util.Tuple2;
+import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -86,7 +94,7 @@ public final class PomParser extends DefaultHandler {
         characterBuffer.setLength(0);
     }
 
-    private final class State {
+    private static final class State {
         String groupId = "";
         Optional<String> artifactIdOpt = Optional.empty();
         String version = "";
@@ -99,47 +107,38 @@ public final class PomParser extends DefaultHandler {
 
 
         Optional<Type> packagingOpt = Optional.empty();
-        final ArrayList<Tuple2<Configuration, Dependency>> dependencies = new ArrayList<>();
-        final ArrayList<Tuple2<Configuration, Dependency>> dependencyManagement = new ArrayList<>();
+        final ArrayList<Tuple2<Scope, PomDependency>> dependencies = new ArrayList<>();
+        final ArrayList<Tuple2<Scope, PomDependency>> dependencyManagement = new ArrayList<>();
 
         final ArrayList<Tuple2<String, String>> properties = new ArrayList<>();
 
-        Optional<Organization> relocationGroupIdOpt = Optional.empty();
-        Optional<ModuleName> relocationArtifactIdOpt = Optional.empty();
+        Optional<Group> relocationGroupIdOpt = Optional.empty();
+        Optional<Artifact> relocationArtifactIdOpt = Optional.empty();
         Optional<String> relocationVersionOpt = Optional.empty();
 
-        Optional<Organization> dependencyGroupIdOpt = Optional.empty();
-        Optional<ModuleName> dependencyArtifactIdOpt = Optional.empty();
+        Optional<Group> dependencyGroupIdOpt = Optional.empty();
+        Optional<Artifact> dependencyArtifactIdOpt = Optional.empty();
         String dependencyVersion = "";
         boolean dependencyOptional = false;
-        Configuration dependencyScope = Configuration.EMPTY;
+        Scope dependencyScope = Scope.EMPTY;
         Type dependencyType = Type.EMPTY;
         Classifier dependencyClassifier = Classifier.EMPTY;
         final HashSet<Exclusion> dependencyExclusions = new HashSet<>();
 
-        Organization dependencyExclusionGroupId = Organization.ALL;
-        ModuleName dependencyExclusionArtifactId = ModuleName.ALL;
+        Group dependencyExclusionGroupId = Group.ALL;
+        Artifact dependencyExclusionArtifactId = Artifact.ALL;
 
         Optional<String> propertyNameOpt = Optional.empty();
 
         String profileId = "";
-        final ArrayList<Tuple2<Configuration, Dependency>> profileDependencies = new ArrayList<>();
-        final ArrayList<Tuple2<Configuration, Dependency>> profileDependencyManagement = new ArrayList<>();
+        final ArrayList<Tuple2<Scope, PomDependency>> profileDependencies = new ArrayList<>();
+        final ArrayList<Tuple2<Scope, PomDependency>> profileDependencyManagement = new ArrayList<>();
         final HashMap<String, String> profileProperties = new HashMap<>();
-        final ArrayList<Tuple2<String, Optional<String>>> profileActivationProperties = new ArrayList<>();
         Optional<Boolean> profileActiveByDefaultOpt = Optional.empty();
-        Optional<String> profilePropertyNameOpt = Optional.empty();
-        Optional<String> profilePropertyValueOpt = Optional.empty();
-
-        Optional<String> profileActivationOsArchOpt = Optional.empty();
-        Optional<String> profileActivationOsFamilyOpt = Optional.empty();
-        Optional<String> profileActivationOsNameOpt = Optional.empty();
-        Optional<String> profileActivationOsVersionOpt = Optional.empty();
-        Activation.Jdk profileActivationJdkOpt = new Activation.Jdk.Unspecified();
 
         final ArrayList<Profile> profiles = new ArrayList<>();
 
-        Project project() {
+        PomInfo pomInfo() {
             final Optional<String> groupIdOpt;
             if (!groupId.isEmpty()) {
                 groupIdOpt = Optional.of(groupId);
@@ -156,14 +155,14 @@ public final class PomParser extends DefaultHandler {
 
             var properties0 = List.copyOf(properties);
 
-            final Optional<Module> parentModuleOpt;
+            final Optional<Library> parentModuleOpt;
             {
                 var parentGroupId = parentGroupIdOpt.orElse(null);
                 var parentArtifactId = parentArtifactIdOpt.orElse(null);
                 if (parentGroupId != null && parentArtifactId != null) {
-                    parentModuleOpt = Optional.of(new Module(
-                            new Organization(parentGroupId),
-                            new ModuleName(parentArtifactId)
+                    parentModuleOpt = Optional.of(new Library(
+                            new Group(parentGroupId),
+                            new Artifact(parentArtifactId)
                     ));
                 }
                 else {
@@ -171,12 +170,12 @@ public final class PomParser extends DefaultHandler {
                 }
             }
 
-            var finalGroupId = groupIdOpt.orElseThrow(() -> new RuntimeException("No organization found"));
+            var finalGroupId = groupIdOpt.orElseThrow(() -> new RuntimeException("No groupId found"));
             var artifactId = artifactIdOpt.orElseThrow(() -> new RuntimeException("No artifactId found"));
             var finalVersion = versionOpt.orElseThrow(() -> new RuntimeException("No version found"));
 
             var parentModule = parentModuleOpt.orElse(null);
-            if (parentModule != null && parentModule.organization().value().isEmpty()) {
+            if (parentModule != null && parentModule.group().value().isEmpty()) {
                 throw new RuntimeException("Parent organization missing");
             }
 
@@ -184,47 +183,22 @@ public final class PomParser extends DefaultHandler {
                 throw new RuntimeException("No parent version found");
             }
 
-
-            // TODO
-            for (var entry : properties0) {
-                if ("extraDependencyAttributes".equals(entry.first())) {
-                    var s = entry.second();
-                }
-            }
-
             var parentOpt = parentModuleOpt.map(module -> new Tuple2<>(
                     module, parentVersion
             ));
 
-            var extraAttrs = properties0
-                    .stream()
-                    .filter(pair -> pair.first().equals("extraDependencyAttributes"))
-                    .findFirst()
-                    ;//.orElse(Map.of());
 
-            var projModule = new Module(
-                    new Organization(finalGroupId),
-                    new ModuleName(artifactId)
-            );
+            var projModule = new Library(finalGroupId, artifactId);
 
-
-            // TODO: relocationDependencyOpt, etc
-
-            return new Project(
+            return new PomInfo(
                     projModule,
                     finalVersion,
-                    List.copyOf(dependencies), // TODO
-                    Map.of(),
+                    List.copyOf(dependencies),
                     parentOpt,
                     List.copyOf(dependencyManagement),
                     properties0,
                     List.copyOf(profiles),
-                    Optional.empty(),
-                    Optional.empty(),
-                    packagingOpt,
-                    false, // TODO
-                    Optional.empty(),
-                    List.of()
+                    packagingOpt
             );
         }
     }
@@ -248,7 +222,7 @@ public final class PomParser extends DefaultHandler {
     }
 
     private interface AddDepHandler {
-        void add(State state, Configuration configuration, Dependency dependency);
+        void add(State state, Scope scope, PomDependency dependency);
     }
 
     private static List<Handler> dependencyHandlers(
@@ -263,7 +237,7 @@ public final class PomParser extends DefaultHandler {
                         state.dependencyArtifactIdOpt = Optional.empty();
                         state.dependencyVersion = "";
                         state.dependencyOptional = false;
-                        state.dependencyScope = Configuration.EMPTY;
+                        state.dependencyScope = Scope.EMPTY;
                         state.dependencyType = Type.EMPTY;
                         state.dependencyClassifier = Classifier.EMPTY;
                         state.dependencyExclusions.clear();
@@ -271,8 +245,8 @@ public final class PomParser extends DefaultHandler {
 
                     @Override
                     public void end(State state) {
-                        var dependency = new Dependency(
-                                new Module(
+                        var dependency = new PomDependency(
+                                new Library(
                                         state.dependencyGroupIdOpt.orElseThrow(() -> new RuntimeException(
                                                 "Expected a groupId on dependency"
                                         )),
@@ -281,11 +255,10 @@ public final class PomParser extends DefaultHandler {
                                         ))
                                 ),
                                 state.dependencyVersion,
-                                Configuration.EMPTY,
                                 state.dependencyExclusions,
-                                new Attributes(state.dependencyType, state.dependencyClassifier),
-                                state.dependencyOptional,
-                                true
+                                state.dependencyType,
+                                state.dependencyClassifier,
+                                state.dependencyOptional
                         );
                         addDepHandler.add(
                                 state,
@@ -303,13 +276,13 @@ public final class PomParser extends DefaultHandler {
                         new LL.Cons<>("groupId", prefix),
                         (state, content) ->
                                 state.dependencyGroupIdOpt =
-                                        Optional.of(new Organization(content))
+                                        Optional.of(new Group(content))
                 ),
                 content(
                         new LL.Cons<>("artifactId", prefix),
                         (state, content) ->
                                 state.dependencyArtifactIdOpt =
-                                        Optional.of(new ModuleName(content))
+                                        Optional.of(new Artifact(content))
                 ),
                 content(
                         new LL.Cons<>("version", prefix),
@@ -324,7 +297,7 @@ public final class PomParser extends DefaultHandler {
                 content(
                         new LL.Cons<>("scope", prefix),
                         (state, content) ->
-                                state.dependencyScope = new Configuration(content)
+                                state.dependencyScope = new Scope(content)
                 ),
                 content(
                         new LL.Cons<>("type", prefix),
@@ -339,8 +312,8 @@ public final class PomParser extends DefaultHandler {
                 new SectionHandler() {
                     @Override
                     public void start(State state) {
-                        state.dependencyExclusionGroupId = Organization.ALL;
-                        state.dependencyExclusionArtifactId = ModuleName.ALL;
+                        state.dependencyExclusionGroupId = Group.ALL;
+                        state.dependencyExclusionArtifactId = Artifact.ALL;
                     }
 
                     @Override
@@ -361,12 +334,12 @@ public final class PomParser extends DefaultHandler {
                 content(
                         new LL.Cons<>("groupId", new LL.Cons<>("exclusion", new LL.Cons<>("exclusions", prefix))),
                         (state, content) ->
-                                state.dependencyExclusionGroupId = new Organization(content)
+                                state.dependencyExclusionGroupId = new Group(content)
                 ),
                 content(
                         new LL.Cons<>("artifactId", new LL.Cons<>("exclusion", new LL.Cons<>("exclusions", prefix))),
                         (state, content) ->
-                                state.dependencyExclusionArtifactId = new ModuleName(content)
+                                state.dependencyExclusionArtifactId = new Artifact(content)
                 )
         );
     }
@@ -423,12 +396,6 @@ public final class PomParser extends DefaultHandler {
                         state.profileDependencies.clear();
                         state.profileDependencyManagement.clear();
                         state.profileProperties.clear();
-                        state.profileActivationProperties.clear();
-                        state.profileActivationOsArchOpt = Optional.empty();
-                        state.profileActivationOsFamilyOpt = Optional.empty();
-                        state.profileActivationOsNameOpt = Optional.empty();
-                        state.profileActivationOsVersionOpt = Optional.empty();
-                        state.profileActivationJdkOpt = new Activation.Jdk.Unspecified();
                     }
 
                     @Override
@@ -436,17 +403,6 @@ public final class PomParser extends DefaultHandler {
                         var profile = new Profile(
                                 state.profileId,
                                 state.profileActiveByDefaultOpt,
-                                new Activation(
-                                        List.copyOf(state.profileActivationProperties),
-                                        new Activation.Os(
-                                                state.profileActivationOsArchOpt,
-                                                state.profileActivationOsFamilyOpt.stream()
-                                                        .collect(Collectors.toUnmodifiableSet()),
-                                                state.profileActivationOsNameOpt,
-                                                state.profileActivationOsVersionOpt
-                                        ),
-                                        state.profileActivationJdkOpt
-                                ),
                                 List.copyOf(state.profileDependencies),
                                 List.copyOf(state.profileDependencyManagement),
                                 Map.copyOf(state.profileProperties)
@@ -473,67 +429,6 @@ public final class PomParser extends DefaultHandler {
                                     case "false" -> Optional.of(false);
                                     default -> Optional.empty();
                                 }
-                ),
-
-                new SectionHandler() {
-                    @Override
-                    public void start(State state) {
-                        state.profilePropertyNameOpt = Optional.empty();
-                        state.profilePropertyValueOpt = Optional.empty();
-                    }
-
-                    @Override
-                    public void end(State state) {
-                        state.profileActivationProperties.add(
-                                new Tuple2<>(
-                                        state.profilePropertyNameOpt.orElseThrow(() ->
-                                            new RuntimeException("Expected profile property name to be set")
-                                        ),
-                                        state.profilePropertyValueOpt
-                                )
-                        );
-                    }
-
-                    @Override
-                    public LL<String> path() {
-                        return new LL.Cons<>("property", new LL.Cons<>("activation", prefix));
-                    }
-                },
-                content(
-                        new LL.Cons<>("name", new LL.Cons<>("property", new LL.Cons<>("activation", prefix))),
-                        (state, content) ->
-                                state.profilePropertyNameOpt = Optional.of(content)
-                ),
-                content(
-                        new LL.Cons<>("value", new LL.Cons<>("property", new LL.Cons<>("activation", prefix))),
-                        (state, content) ->
-                                state.profilePropertyValueOpt = Optional.of(content)
-                ),
-                content(
-                        new LL.Cons<>("arch", new LL.Cons<>("os", new LL.Cons<>("activation", prefix))),
-                        (state, content) ->
-                                state.profileActivationOsArchOpt = Optional.of(content)
-                ),
-                content(
-                        new LL.Cons<>("family", new LL.Cons<>("os", new LL.Cons<>("activation", prefix))),
-                        (state, content) ->
-                                state.profileActivationOsFamilyOpt = Optional.of(content)
-                ),
-                content(
-                        new LL.Cons<>("name", new LL.Cons<>("os", new LL.Cons<>("activation", prefix))),
-                        (state, content) ->
-                                state.profileActivationOsNameOpt = Optional.of(content)
-                ),
-                content(
-                        new LL.Cons<>("version", new LL.Cons<>("os", new LL.Cons<>("activation", prefix))),
-                        (state, content) ->
-                                state.profileActivationOsVersionOpt = Optional.of(content)
-                ),
-                content(
-                        new LL.Cons<>("jdk", new LL.Cons<>("activation", prefix)),
-                        (state, content) -> {
-                            // TODO
-                        }
                 )
         ));
 
@@ -632,14 +527,14 @@ public final class PomParser extends DefaultHandler {
                         List.of("groupId", "relocation", "distributionManagement", "project"),
                         (state, content) ->
                                 state.relocationGroupIdOpt = Optional.of(
-                                        new Organization(content)
+                                        new Group(content)
                                 )
                 ),
                 content(
                         List.of("artifactId", "relocation", "distributionManagement", "project"),
                         (state, content) ->
                                 state.relocationArtifactIdOpt = Optional.of(
-                                        new ModuleName(content)
+                                        new Artifact(content)
                                 )
                 ),
                 content(
@@ -679,7 +574,25 @@ public final class PomParser extends DefaultHandler {
                 ));
     }
 
-    public Project project() {
-        return this.state.project();
+    public PomInfo pomInfo() {
+        return this.state.pomInfo();
+    }
+
+    public static PomInfo parse(String pomString) {
+        var pomParser = new PomParser();
+        var factory = SAXParserFactory.newDefaultInstance();
+        try {
+            SAXParser saxParser = factory.newSAXParser();
+            saxParser.parse(
+                    new ByteArrayInputStream(pomString.getBytes(StandardCharsets.UTF_8)),
+                    pomParser
+            );
+        } catch (ParserConfigurationException | SAXException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        return pomParser.pomInfo();
     }
 }
