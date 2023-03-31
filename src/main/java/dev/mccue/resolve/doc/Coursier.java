@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * as documentation for us.
  */
 @Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.TYPE)
+@Target({ElementType.TYPE, ElementType.METHOD})
 public @interface Coursier {
     /**
      * @return A reference to the place in Coursier's design you

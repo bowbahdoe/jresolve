@@ -8,8 +8,23 @@ import java.util.*;
 public sealed interface LL<T> extends Iterable<T> {
     record Nil<T>() implements LL<T> {
         @Override
+        public LL.Nil<T> reverse() {
+            return this;
+        }
+
+        @Override
         public Optional<T> headOption() {
             return Optional.empty();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "[]";
         }
     }
     record Cons<T>(T head, LL<T> tail) implements LL<T> {
@@ -19,8 +34,40 @@ public sealed interface LL<T> extends Iterable<T> {
         }
 
         @Override
+        public LL.Cons<T> reverse() {
+            var top = this.tail;
+            LL.Cons<T> reversed = new LL.Nil<T>().prepend(head);
+            while (top instanceof LL.Cons<T> hasHead) {
+                reversed = reversed.prepend(hasHead.head);
+                top = hasHead.tail;
+            }
+            return reversed;
+        }
+
+        @Override
         public Optional<T> headOption() {
             return Optional.of(head);
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            var sb = new StringBuilder();
+            sb.append("[");
+            LL<T> self = this;
+            while (self instanceof LL.Cons<T> hasHead) {
+                sb.append(hasHead.head);
+                if (hasHead.tail instanceof LL.Cons<T>) {
+                    sb.append(", ");
+                }
+                self = hasHead.tail;
+            }
+            sb.append("]");
+            return sb.toString();
         }
     }
 
@@ -28,7 +75,15 @@ public sealed interface LL<T> extends Iterable<T> {
         return new LL.Cons<>(first, this);
     }
 
+    LL<T> reverse();
+
+    default LL.Cons<T> append(T last) {
+        return this.reverse().prepend(last).reverse();
+    }
+
     Optional<T> headOption();
+
+    boolean isEmpty();
 
     static <T> LL<T> fromJavaList(List<T> list) {
         LL<T> head = new LL.Nil<>();

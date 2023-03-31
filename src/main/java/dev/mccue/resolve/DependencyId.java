@@ -1,4 +1,4 @@
 package dev.mccue.resolve;
 
-public interface DependencyId {
+record DependencyId(Library library, CoordinateId coordinateId) {
 }

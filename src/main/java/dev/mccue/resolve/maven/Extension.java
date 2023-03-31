@@ -1,4 +1,4 @@
-package dev.mccue.resolve;
+package dev.mccue.resolve.maven;
 
 import dev.mccue.resolve.doc.Coursier;
 

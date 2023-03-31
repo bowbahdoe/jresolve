@@ -1,30 +1,21 @@
 package dev.mccue.resolve;
 
 
-import dev.mccue.resolve.maven.PomDependency;
-import dev.mccue.resolve.doc.Coursier;
-import dev.mccue.resolve.doc.StackOverflow;
 import dev.mccue.resolve.util.LL;
-import dev.mccue.resolve.util.Tuple2;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
-public final class VersionMap {
+
+final class VersionMap {
     private final HashMap<Library, Entry> value;
 
     public VersionMap() {
         this.value = new HashMap<>();
     }
 
-    VersionMap(HashMap<Library, Entry> value) {
-        this.value = value;
-    }
-
     public record Entry(
             HashMap<CoordinateId, Coordinate> versions,
-            HashMap<CoordinateId, HashSet<Path>> paths,
+            HashMap<CoordinateId, HashSet<LL<Library>>> paths,
             CoordinateId currentSelection,
             boolean topDep
     ) {
@@ -34,7 +25,7 @@ public final class VersionMap {
 
         public Entry(
                 HashMap<CoordinateId, Coordinate> versions,
-                HashMap<CoordinateId, HashSet<Path>> paths
+                HashMap<CoordinateId, HashSet<LL<Library>>> paths
         ) {
             this(versions, paths, null, false);
         }
@@ -51,20 +42,20 @@ public final class VersionMap {
     public void addVersion(
             Library library,
             Coordinate coordinate,
-            Path path,
+            LL<Library> dependencyPath,
             CoordinateId coordinateId
     ) {
         var entry = this.value.getOrDefault(library, new Entry());
 
         entry.versions.put(coordinateId, coordinate);
         entry.paths.computeIfAbsent(coordinateId, k -> new HashSet<>());
-        entry.paths.get(coordinateId).add(path);
+        entry.paths.get(coordinateId).add(dependencyPath);
 
         this.value.put(library, entry);
     }
 
     public void selectVersion(Library library, CoordinateId coordinateId, boolean isTop) {
-        var entry = this.value.get(library);
+        var entry = this.value.computeIfAbsent(library, (__) -> new Entry());
         entry = entry.withSelection(coordinateId);
         if (isTop) {
             entry = entry.asTopDep();
@@ -82,7 +73,7 @@ public final class VersionMap {
         }
     }
 
-    public Optional<HashSet<Path>> selectedPaths(Library library) {
+    public Optional<HashSet<LL<Library>>> selectedPaths(Library library) {
         var entry = this.value.get(library);
         if (entry == null) {
             return Optional.empty();
@@ -99,20 +90,20 @@ public final class VersionMap {
     }
 
     public boolean parentMissing(
-            Path parentPath
+            LL<Library> parentDependencyPath
     ) {
-        if (parentPath.isEmpty()) {
+        if (parentDependencyPath.isEmpty()) {
             return false;
         }
 
-        var path = parentPath.value();
+        var path = parentDependencyPath;
         while (path instanceof LL.Cons<Library> consPath) {
             var lib = consPath.head();
             var checkPath = consPath.tail();
             var vmapEntry = value.get(lib);
             if (vmapEntry != null && vmapEntry.paths()
                     .getOrDefault(vmapEntry.currentSelection, new HashSet<>())
-                    .contains(new Path(checkPath))) {
+                    .contains(checkPath)) {
                 path = checkPath;
                 continue;
             }
@@ -124,39 +115,40 @@ public final class VersionMap {
     }
 
     public void deselectOrphans(
-            List<Path> omittedPaths
+            List<LL<Library>> omittedDependencyPaths
     ) {
 
     }
 
     public InclusionDecision includeCoordinate(
-            Library library,
-            Coordinate coordinate,
+            Dependency dependency,
             CoordinateId coordinateId,
-            Path path,
-            Object exclusions,
-            Object config
+            LL<Library> dependencyPath
     ) {
-        if (path.isEmpty()) {
-            this.addVersion(library, coordinate, path, coordinateId);
+        var library = dependency.library();
+        var coordinate = dependency.coordinate();
+        if (dependencyPath.isEmpty()) {
+            this.addVersion(library, coordinate, dependencyPath, coordinateId);
             this.selectVersion(library, coordinateId, true);
-            return new InclusionDecision(true, Reason.NEW_TOP_DEP);
+            return InclusionDecision.NEW_TOP_DEP;
         }
-        // else if (excluded) {}
+        else if (!dependency.exclusions().shouldInclude(library)) {
+            return InclusionDecision.EXCLUDED;
+        }
         else if (this.value.get(library) != null && this.value.get(library).topDep()) {
-            return new InclusionDecision(false, Reason.USE_TOP);
+            return InclusionDecision.USE_TOP;
         }
-        else if (parentMissing(path)) {
-            return new InclusionDecision(false, Reason.PARENT_OMITTED);
+        else if (parentMissing(dependencyPath)) {
+            return InclusionDecision.PARENT_OMITTED;
         }
         else if (selectedVersion(library).isEmpty()) {
-            this.addVersion(library, coordinate, path, coordinateId);
+            this.addVersion(library, coordinate, dependencyPath, coordinateId);
             this.selectVersion(library, coordinateId, false);
-            return new InclusionDecision(true, Reason.NEW_DEP);
+            return InclusionDecision.NEW_DEP;
         }
         else if (Objects.equals(selectedVersion(library).orElse(null), coordinateId)) {
-            this.addVersion(library, coordinate, path, coordinateId);
-            return new InclusionDecision(false, Reason.SAME_VERSION);
+            this.addVersion(library, coordinate, dependencyPath, coordinateId);
+            return InclusionDecision.SAME_VERSION;
         }
         else {
             var selectedVersion = selectedVersion(library)
@@ -169,14 +161,15 @@ public final class VersionMap {
                 throw new RuntimeException("Incomparable coordinates");
             }
             else if (comparison == Coordinate.VersionComparison.GREATER_THAN) {
-                addVersion(library, coordinate, path, coordinateId);
-                // TODO: deselectOrphans(List.of());
+                addVersion(library, coordinate, dependencyPath, coordinateId);
+                // TODO
+                deselectOrphans(List.of());
                 selectVersion(library, coordinateId, false);
 
-                return new InclusionDecision(true, Reason.NEWER_VERSION);
+                return InclusionDecision.NEWER_VERSION;
             }
             else {
-                return new InclusionDecision(false, Reason.OLDER_VERSION);
+                return InclusionDecision.OLDER_VERSION;
             }
         }
     }
@@ -187,6 +180,44 @@ public final class VersionMap {
     }
 
 
+    public void printPrettyString() {
+        value.forEach((library, entry) -> {
+            System.out.println(library);
+            System.out.println("-".repeat(40));
+
+
+            System.out.print(" ".repeat(4));
+            System.out.println("TOP_DEP");
+            System.out.print(" ".repeat(8));
+            System.out.println(entry.topDep);
+
+            System.out.print(" ".repeat(4));
+            System.out.println("CURRENT_SELECTION");
+            System.out.print(" ".repeat(8));
+            System.out.println(entry.currentSelection);
+
+            System.out.print(" ".repeat(4));
+            System.out.println("VERSIONS");
+            entry.versions.forEach(((coordinateId, coordinate) -> {
+                System.out.print(" ".repeat(8));
+                System.out.print(coordinateId);
+                System.out.print("  ->  ");
+                System.out.println(coordinate);
+            }));
+
+            System.out.print(" ".repeat(4));
+            System.out.println("PATHS");
+            entry.paths.forEach((coordinateId, dependencyPaths) -> {
+                System.out.print(" ".repeat(8));
+                System.out.println(coordinateId);
+                dependencyPaths.forEach(path -> {
+                    System.out.print(" ".repeat(12));
+                    System.out.println(path);
+                });
+            });
+            System.out.println();
+        });
+    }
 
 
 }

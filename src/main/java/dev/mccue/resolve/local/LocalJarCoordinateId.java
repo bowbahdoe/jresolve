@@ -4,5 +4,5 @@ import dev.mccue.resolve.CoordinateId;
 
 import java.nio.file.Path;
 
-public record LocalCoordinateId(Path root) implements CoordinateId {
+record LocalJarCoordinateId(Path path) implements CoordinateId {
 }

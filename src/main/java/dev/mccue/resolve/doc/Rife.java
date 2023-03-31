@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * Marks that some code was taken from the Rife framework.
  */
 @Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.TYPE)
+@Target({ElementType.TYPE, ElementType.METHOD})
 public @interface Rife {
     String value();
 

@@ -1,12 +1,10 @@
 package dev.mccue.resolve;
 
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.Supplier;
 
 public interface Cache {
-    Optional<OutputStream> get(List<String> key);
-
-    void put(List<String> key, InputStream data);
+    Path fetchIfAbsent(List<String> key, Supplier<InputStream> data);
 }

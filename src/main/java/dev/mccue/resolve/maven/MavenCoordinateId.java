@@ -1,8 +1,8 @@
 package dev.mccue.resolve.maven;
 
 import dev.mccue.resolve.CoordinateId;
-import dev.mccue.resolve.VersionNumber;
+import dev.mccue.resolve.Version;
 
-public record MavenCoordinateId(VersionNumber version)
+record MavenCoordinateId(Version version)
         implements CoordinateId {
 }

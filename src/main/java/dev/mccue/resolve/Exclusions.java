@@ -8,15 +8,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Coursier("https://github.com/coursier/coursier/blob/f5f0870/modules/core/shared/src/main/scala/coursier/core/MinimizedExclusions.scala")
-public final class MinimizedExclusions {
-    public static final MinimizedExclusions NONE = new MinimizedExclusions(ExcludeNone.INSTANCE);
-    public static final MinimizedExclusions ALL = new MinimizedExclusions(ExcludeAll.INSTANCE);
+public final class Exclusions {
+    public static final Exclusions NONE = new Exclusions(ExcludeNone.INSTANCE);
+    public static final Exclusions ALL = new Exclusions(ExcludeAll.INSTANCE);
 
     private int hash;
 
     private final ExclusionData exclusionData;
 
-    private MinimizedExclusions(ExclusionData exclusionData) {
+    private Exclusions(ExclusionData exclusionData) {
         this.hash = 0;
         this.exclusionData = Objects.requireNonNull(
                 exclusionData,
@@ -24,13 +24,13 @@ public final class MinimizedExclusions {
         );
     }
 
-    public static MinimizedExclusions of(
+    public static Exclusions of(
             Set<Exclusion> exclusions
     ) {
         return of(List.copyOf(exclusions));
     }
 
-    public static MinimizedExclusions of(
+    public static Exclusions of(
             List<Exclusion> exclusions
     ) {
         if (exclusions.isEmpty()) {
@@ -55,7 +55,7 @@ public final class MinimizedExclusions {
             }
         }
 
-        return new MinimizedExclusions(new ExcludeSpecific(
+        return new Exclusions(new ExcludeSpecific(
                 Set.copyOf(excludeByOrg0),
                 Set.copyOf(excludeByName0),
                 remaining0.stream()
@@ -66,11 +66,11 @@ public final class MinimizedExclusions {
         );
     }
 
-    public boolean shouldInclude(Group group, Artifact artifact) {
-        return this.exclusionData.shouldInclude(group, artifact);
+    public boolean shouldInclude(Library library) {
+        return this.exclusionData.shouldInclude(library.group(), library.artifact());
     }
 
-    public MinimizedExclusions join(MinimizedExclusions other) {
+    public Exclusions join(Exclusions other) {
         var newData = this.exclusionData.join(other.exclusionData);
         if (newData == this.exclusionData) {
             return this;
@@ -79,11 +79,11 @@ public final class MinimizedExclusions {
             return other;
         }
         else {
-            return new MinimizedExclusions(newData);
+            return new Exclusions(newData);
         }
     }
 
-    public MinimizedExclusions meet(MinimizedExclusions other) {
+    public Exclusions meet(Exclusions other) {
         var newData = this.exclusionData.meet(other.exclusionData);
         if (newData == this.exclusionData) {
             return this;
@@ -92,17 +92,17 @@ public final class MinimizedExclusions {
             return other;
         }
         else {
-            return new MinimizedExclusions(newData);
+            return new Exclusions(newData);
         }
     }
 
-    public MinimizedExclusions map(Function<String, String> f) {
+    public Exclusions map(Function<String, String> f) {
         var newData = this.exclusionData.map(f);
         if (newData == this.exclusionData) {
             return this;
         }
         else {
-            return new MinimizedExclusions(newData);
+            return new Exclusions(newData);
         }
     }
 
@@ -119,7 +119,7 @@ public final class MinimizedExclusions {
         return this.exclusionData.size();
     }
 
-    public boolean subsetOf(MinimizedExclusions other) {
+    public boolean subsetOf(Exclusions other) {
         return this.exclusionData.subsetOf(other.exclusionData);
     }
 
@@ -418,7 +418,7 @@ public final class MinimizedExclusions {
         public boolean subsetOf(ExclusionData other) {
             return switch (other) {
                 case ExcludeNone __ -> false;
-                case ExcludeAll __ -> false; // This seems wrong
+                case ExcludeAll __ -> true;
                 case ExcludeSpecific excludeSpecific ->
                         excludeSpecific.byOrg.containsAll(byOrg)
                         && excludeSpecific.byArtifact.containsAll(byArtifact)
@@ -444,8 +444,8 @@ public final class MinimizedExclusions {
     @Override
     public boolean equals(Object obj) {
         return (this == obj) || (
-                obj instanceof MinimizedExclusions minimizedExclusions &&
-                this.exclusionData.equals(minimizedExclusions.exclusionData)
+                obj instanceof Exclusions exclusions &&
+                this.exclusionData.equals(exclusions.exclusionData)
         );
     }
 
@@ -464,8 +464,6 @@ public final class MinimizedExclusions {
 
     @Override
     public String toString() {
-        return "MinimizedExclusions[" +
-                "exclusionData=" + exclusionData +
-                ']';
+        return exclusionData.toString();
     }
 }
