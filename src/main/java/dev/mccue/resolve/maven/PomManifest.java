@@ -10,6 +10,16 @@ import java.util.function.BiFunction;
 record PomManifest(
         @Override List<Dependency> dependencies
 ) implements Manifest {
+    PomManifest normalize(Cache cache) {
+        return new PomManifest(dependencies
+                .stream()
+                .map(dependency -> new Dependency(
+                        dependency.library(),
+                        dependency.coordinate().normalize(dependency.library(), cache),
+                        dependency.exclusions()
+                ))
+                .toList());
+    }
     public static PomManifest from(
             EffectivePomInfo effectivePomInfo,
             List<Scope> scopes,

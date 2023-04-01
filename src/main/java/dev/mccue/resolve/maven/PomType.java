@@ -13,7 +13,7 @@ sealed interface PomType {
         }
 
         @Override
-        public PomVersion.Type orElse(PomVersion.Type defaultValue) {
+        public Type orElse(Type defaultValue) {
             return defaultValue;
         }
 
@@ -34,12 +34,12 @@ sealed interface PomType {
         }
 
         @Override
-        public PomVersion.Type orElse(PomVersion.Type defaultValue) {
-            return new PomVersion.Type(value);
+        public Type orElse(Type defaultValue) {
+            return new Type(value);
         }
     }
 
     PomType map(Function<String, String> f);
 
-    PomVersion.Type orElse(PomVersion.Type defaultValue);
+    Type orElse(Type defaultValue);
 }

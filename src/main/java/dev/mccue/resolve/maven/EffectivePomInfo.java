@@ -1,10 +1,13 @@
 package dev.mccue.resolve.maven;
 
+import dev.mccue.resolve.Cache;
+import dev.mccue.resolve.Library;
 import dev.mccue.resolve.doc.Rife;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -91,9 +94,6 @@ record EffectivePomInfo(
                     });
 
             top.dependencyManagement()
-                    .stream()
-                    // TODO: Handle BOMs
-                    .filter(managedDep -> !managedDep.scope().orElse(Scope.COMPILE).equals(Scope.IMPORT))
                     .forEach(dependency -> {
                         var newDep = resolveDep.apply(dependency);
                         dependencyManagement.put(PomDependencyKey.from(newDep), newDep);
@@ -112,6 +112,45 @@ record EffectivePomInfo(
         );
     }
 
+    EffectivePomInfo resolveImports(MavenRepository repository, Cache cache) {
+        var dependencies = this.dependencies.stream()
+                .mapMulti((PomDependency dependency, Consumer<PomDependency> addDep) -> {
+                    if (!dependency.scope().orElse(Scope.COMPILE).equals(Scope.IMPORT)) {
+                        addDep.accept(dependency);
+                    }
+                    else {
+                        EffectivePomInfo.from(repository.getAllPoms(
+                                new Library(
+                                        dependency.groupId().orElseThrow(), dependency.artifactId().orElseThrow()),
+                                        dependency.version().orElseThrow(),
+                                        cache
+                                ))
+                                .resolveImports(repository, cache)
+                                .dependencies
+                                .forEach(addDep);
+                    }
+                })
+                .toList();
+        var dependencyManagement = this.dependencyManagement.stream()
+                .mapMulti((PomDependency dependency, Consumer<PomDependency> addDep) -> {
+                    if (!dependency.scope().orElse(Scope.COMPILE).equals(Scope.IMPORT)) {
+                        addDep.accept(dependency);
+                    }
+                    else {
+                        EffectivePomInfo.from(repository.getAllPoms(
+                                new Library(
+                                        dependency.groupId().orElseThrow(), dependency.artifactId().orElseThrow()),
+                                        dependency.version().orElseThrow(),
+                                        cache
+                                ))
+                                .resolveImports(repository, cache)
+                                .dependencyManagement
+                                .forEach(addDep);
+                    }
+                })
+                .toList();
+        return new EffectivePomInfo(groupId, artifactId, version, dependencies, dependencyManagement, packaging);
+    }
     /*
     This is because the minimal set of information for matching a dependency reference against a dependencyManagement section is actually {groupId, artifactId, type, classifier}.
     https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html

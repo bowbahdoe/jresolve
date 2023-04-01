@@ -30,7 +30,7 @@ public record Dependency(
     }
 
     public static Dependency mavenCentral(String coordinate) {
-        return maven(coordinate, MavenRepository.MAVEN_CENTRAL);
+        return maven(coordinate, MavenRepository.central());
     }
 
     Dependency withExclusions(Exclusions exclusions) {

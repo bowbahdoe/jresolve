@@ -3,6 +3,7 @@ package dev.mccue.resolve;
 import dev.mccue.resolve.doc.ToolsDeps;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 @ToolsDeps(
         value = "https://clojure.org/reference/dep_expansion",
@@ -60,6 +61,25 @@ public interface Coordinate {
     };
 
     /**
+     * In some situations a coordinate might need to consult an external source
+     * to know exactly what to do to locate a library.
+     *
+     * <p>
+     *     The big use case of this are version ranges which, while an affront to <b>god</b>
+     *     are nonetheless in many published POMs.
+     * </p>
+     *
+     * <p>
+     *     Another is snapshot versioning, equally sinful.
+     * </p>
+     *
+     * @return The normalized coordinate
+     */
+    default Coordinate normalize(Library library, Cache cache) {
+        return this;
+    }
+
+    /**
      * Result of a comparison between two coordinates.
      */
     enum VersionComparison {
@@ -96,4 +116,12 @@ public interface Coordinate {
      * </p>
      */
     Path getLibraryLocation(Library library, Cache cache);
+
+    default Optional<Path> getLibrarySourcesLocation(Library library, Cache cache) {
+        return Optional.empty();
+    }
+
+    default Optional<Path> getLibraryDocumentationLocation(Library library, Cache cache) {
+        return Optional.empty();
+    }
 }

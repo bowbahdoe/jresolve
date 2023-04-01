@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static dev.mccue.resolve.maven.MavenRepository.MAVEN_CENTRAL;
+import static dev.mccue.resolve.maven.RemoteMavenRepository.MAVEN_CENTRAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PomManifestTest {

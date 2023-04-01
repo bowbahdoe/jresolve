@@ -262,23 +262,23 @@ public final class Exclusions {
     }
 
     public record ExcludeSpecific(
-            Set<Group> byOrg,
+            Set<Group> byGroup,
             Set<Artifact> byArtifact,
             Set<Exclusion> specific
     ) implements ExclusionData {
         public ExcludeSpecific(
-                Set<Group> byOrg,
+                Set<Group> byGroup,
                 Set<Artifact> byArtifact,
                 Set<Exclusion> specific
         ) {
-            this.byOrg = Set.copyOf(byOrg);
+            this.byGroup = Set.copyOf(byGroup);
             this.byArtifact = Set.copyOf(byArtifact);
             this.specific = Set.copyOf(specific);
         }
 
         @Override
         public boolean shouldInclude(Group group, Artifact artifact) {
-            return !this.byOrg.contains(group)
+            return !this.byGroup.contains(group)
                     && !this.byArtifact.contains(artifact)
                     && !this.specific.contains(new Exclusion(group, artifact));
         }
@@ -295,7 +295,7 @@ public final class Exclusions {
                 ) -> {
 
                     var joinedByOrg = new HashSet<Group>();
-                    joinedByOrg.addAll(this.byOrg);
+                    joinedByOrg.addAll(this.byGroup);
                     joinedByOrg.addAll(otherByOrg);
 
                     var joinedByModule = new HashSet<Artifact>();
@@ -313,7 +313,7 @@ public final class Exclusions {
                     otherSpecific
                             .stream()
                             .filter(exclusion ->
-                                    !byOrg.contains(exclusion.group()) &&
+                                    !byGroup.contains(exclusion.group()) &&
                                             !byArtifact.contains(exclusion.artifact()))
                             .forEach(joinedSpecific::add);
 
@@ -336,7 +336,7 @@ public final class Exclusions {
                         Set<Artifact> otherByModule,
                         Set<Exclusion> otherSpecific
                 )  -> {
-                    var metByOrg = byOrg.stream()
+                    var metByOrg = byGroup.stream()
                             .filter(otherByOrg::contains)
                             .collect(Collectors.toUnmodifiableSet());
 
@@ -359,7 +359,7 @@ public final class Exclusions {
                             .filter(exclusion -> {
                                 var org = exclusion.group();
                                 var moduleName = exclusion.artifact();
-                                return byOrg.contains(org) ||
+                                return byGroup.contains(org) ||
                                         byArtifact.contains(moduleName) ||
                                         specific.contains(exclusion);
                             })
@@ -385,7 +385,7 @@ public final class Exclusions {
         public Tuple4<Boolean, Set<Group>, Set<Artifact>, Set<Exclusion>> partitioned() {
             return new Tuple4<>(
                     false,
-                    byOrg,
+                    byGroup,
                     byArtifact,
                     specific
             );
@@ -394,7 +394,7 @@ public final class Exclusions {
         @Override
         public ExclusionData map(Function<String, String> f) {
             return new ExcludeSpecific(
-                    byOrg.stream()
+                    byGroup.stream()
                             .map(org -> org.map(f))
                             .collect(Collectors.toUnmodifiableSet()),
                     byArtifact.stream()
@@ -411,7 +411,7 @@ public final class Exclusions {
 
         @Override
         public int size() {
-            return byOrg.size() + byArtifact().size() + specific.size();
+            return byGroup.size() + byArtifact().size() + specific.size();
         }
 
         @Override
@@ -420,7 +420,7 @@ public final class Exclusions {
                 case ExcludeNone __ -> false;
                 case ExcludeAll __ -> true;
                 case ExcludeSpecific excludeSpecific ->
-                        excludeSpecific.byOrg.containsAll(byOrg)
+                        excludeSpecific.byGroup.containsAll(byGroup)
                         && excludeSpecific.byArtifact.containsAll(byArtifact)
                         && excludeSpecific.specific.containsAll(specific);
             };
@@ -429,7 +429,7 @@ public final class Exclusions {
         @Override
         public Set<Exclusion> toSet() {
             var set = new HashSet<Exclusion>();
-            byOrg.stream()
+            byGroup.stream()
                     .map(org -> new Exclusion(org, Artifact.ALL))
                     .forEach(set::add);
             byArtifact.stream()

@@ -18,6 +18,10 @@ public class ResolveTest {
         resolution.versionMap().printPrettyString();
     }
 
+    record FakeManifest(
+            @Override List<Dependency> dependencies
+    ) implements Manifest {}
+
     record FakeCoordinateId(int version) implements CoordinateId {}
 
     record FakeCoordinate(int version, Manifest manifest) implements Coordinate {
@@ -45,7 +49,11 @@ public class ResolveTest {
     }
 
     static Dependency fake(String group, String artifact, int version, List<Dependency> manifest) {
-        return new Dependency(new Library(group, artifact), new FakeCoordinate(version, () -> manifest));
+        return new Dependency(new Library(group, artifact), new FakeCoordinate(version, new FakeManifest(manifest)));
+    }
+
+    static Dependency fake(String group, String artifact, int version, List<Dependency> manifest, Exclusions exclusions) {
+        return new Dependency(new Library(group, artifact), new FakeCoordinate(version, new FakeManifest(manifest)), exclusions);
     }
 
     static Dependency fake(String group, String artifact, int version) {
@@ -67,5 +75,38 @@ public class ResolveTest {
                 .run();
 
         resolution.versionMap().printPrettyString();
+    }
+
+    @Test
+    public void testExclusions() {
+        var dep = fake(
+                "ex", "A", 1, List.of(
+                   fake("ex", "B", 1, List.of(
+                           fake("ex", "C", 1, List.of(
+                                   fake("ex", "X", 1, List.of()),
+                                   fake("ex", "Y", 1, List.of()),
+                                   fake("ex", "Z", 1, List.of())
+                           ), Exclusions.of(List.of(
+                                   new Exclusion(Group.ALL, new Artifact("X")),
+                                   new Exclusion(Group.ALL, new Artifact("Y"))
+                           )))
+                   )),
+                   fake("ex", "D", 1, List.of(
+                           fake("ex", "C", 1, List.of(
+                                           fake("ex", "X", 1, List.of()),
+                                           fake("ex", "Y", 1, List.of()),
+                                           fake("ex", "Z", 1, List.of())
+                           ), Exclusions.of(List.of(
+                                   new Exclusion(Group.ALL, new Artifact("X"))
+                           ))
+                   ))
+                )));
+
+        new Resolve().addDependency(dep).run().versionMap().printPrettyString();
+
+        System.out.println(Exclusions.of(List.of(
+                new Exclusion(Group.ALL, new Artifact("X")),
+                new Exclusion(Group.ALL, new Artifact("Y"))
+        )));
     }
 }
