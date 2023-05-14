@@ -1,7 +1,6 @@
 package dev.mccue.resolve;
 
 import dev.mccue.resolve.doc.Coursier;
-import dev.mccue.resolve.util.Tuple4;
 
 import java.util.*;
 import java.util.function.Function;
@@ -28,6 +27,12 @@ public final class Exclusions {
             Set<Exclusion> exclusions
     ) {
         return of(List.copyOf(exclusions));
+    }
+
+    public static Exclusions of(
+            Exclusion... exclusions
+    ) {
+        return of(Arrays.asList(exclusions));
     }
 
     public static Exclusions of(
@@ -106,15 +111,6 @@ public final class Exclusions {
         }
     }
 
-    public Tuple4<Boolean,
-            Set<Group>,
-            Set<Artifact>,
-            Set<Exclusion>
-            > partitioned() {
-        return this.exclusionData.partitioned();
-    }
-
-
     public int size() {
         return this.exclusionData.size();
     }
@@ -127,7 +123,7 @@ public final class Exclusions {
         return this.exclusionData.toSet();
     }
 
-    public sealed interface ExclusionData {
+    sealed interface ExclusionData {
         boolean shouldInclude(
                 Group group,
                 Artifact artifact
@@ -135,13 +131,6 @@ public final class Exclusions {
 
         ExclusionData join(ExclusionData other);
         ExclusionData meet(ExclusionData other);
-
-        Tuple4<
-                Boolean,
-                Set<Group>,
-                Set<Artifact>,
-                Set<Exclusion>
-                > partitioned();
 
         ExclusionData map(Function<String, String> f);
 
@@ -152,7 +141,7 @@ public final class Exclusions {
         Set<Exclusion> toSet();
     }
 
-    public enum ExcludeNone implements ExclusionData {
+    enum ExcludeNone implements ExclusionData {
         INSTANCE;
 
         @Override
@@ -168,16 +157,6 @@ public final class Exclusions {
         @Override
         public ExclusionData meet(ExclusionData other) {
             return ExcludeNone.INSTANCE;
-        }
-
-        @Override
-        public Tuple4<Boolean, Set<Group>, Set<Artifact>, Set<Exclusion>> partitioned() {
-            return new Tuple4<>(
-                    false,
-                    Set.of(),
-                    Set.of(),
-                    Set.of()
-            );
         }
 
         @Override
@@ -207,7 +186,7 @@ public final class Exclusions {
         }
     }
 
-    public enum ExcludeAll implements ExclusionData {
+    enum ExcludeAll implements ExclusionData {
         INSTANCE;
 
         @Override
@@ -223,16 +202,6 @@ public final class Exclusions {
         @Override
         public ExclusionData meet(ExclusionData other) {
             return other;
-        }
-
-        @Override
-        public Tuple4<Boolean, Set<Group>, Set<Artifact>, Set<Exclusion>> partitioned() {
-            return new Tuple4<>(
-                    true,
-                    Set.of(),
-                    Set.of(),
-                    Set.of()
-            );
         }
 
         @Override
@@ -261,7 +230,7 @@ public final class Exclusions {
         }
     }
 
-    public record ExcludeSpecific(
+    record ExcludeSpecific(
             Set<Group> byGroup,
             Set<Artifact> byArtifact,
             Set<Exclusion> specific
@@ -379,16 +348,6 @@ public final class Exclusions {
 
                 }
             };
-        }
-
-        @Override
-        public Tuple4<Boolean, Set<Group>, Set<Artifact>, Set<Exclusion>> partitioned() {
-            return new Tuple4<>(
-                    false,
-                    byGroup,
-                    byArtifact,
-                    specific
-            );
         }
 
         @Override

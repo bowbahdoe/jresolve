@@ -24,11 +24,11 @@ import java.util.function.Supplier;
         """
 )
 final class RemoteMavenRepository extends MavenRepository {
-    public static final RemoteMavenRepository MAVEN_CENTRAL =
+    static final RemoteMavenRepository MAVEN_CENTRAL =
             new RemoteMavenRepository("https://repo1.maven.org/maven2/");
-    public static final RemoteMavenRepository SONATYPE_SNAPSHOTS =
+    static final RemoteMavenRepository SONATYPE_SNAPSHOTS =
             new RemoteMavenRepository("https://s01.oss.sonatype.org/content/repositories/snapshots/");
-    public static final RemoteMavenRepository CLOJARS =
+    static final RemoteMavenRepository CLOJARS =
             new RemoteMavenRepository("https://clojars.org/repo");
 
     private final String url;
@@ -72,11 +72,46 @@ final class RemoteMavenRepository extends MavenRepository {
     }
 
     @Override
+    URI getMetadataUri(
+            Library library
+    ) {
+        var result = new StringBuilder(url);
+        if (!url.endsWith("/")) {
+            result.append("/");
+        }
+
+        return getMetadataUri(result, library);
+    }
+
+
+    @Override
     InputStream getFile(Library library, Version version, Classifier classifier, Extension extension) throws LibraryNotFound {
         var requestBuilder =
                 HttpRequest.newBuilder()
                         .GET()
                         .uri(getArtifactUri(library, version, classifier, extension));
+        this.enrichRequest.accept(requestBuilder);
+        var httpClient = this.httpClient.get();
+
+        try {
+            var response = httpClient.send(
+                    requestBuilder.build(),
+                    HttpResponse.BodyHandlers.ofInputStream()
+            );
+            return response.body();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    InputStream getMetadata(Library library) {
+        var requestBuilder =
+                HttpRequest.newBuilder()
+                        .GET()
+                        .uri(getMetadataUri(library));
         this.enrichRequest.accept(requestBuilder);
         var httpClient = this.httpClient.get();
 

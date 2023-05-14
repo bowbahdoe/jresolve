@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * Marks that some code or pattern came from Clojure's tools.deps
  */
 @Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.TYPE)
+@Target({ElementType.RECORD_COMPONENT, ElementType.TYPE})
 public @interface ToolsDeps {
     String value();
 

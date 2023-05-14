@@ -1,6 +1,5 @@
 package dev.mccue.resolve.maven;
 
-import dev.mccue.resolve.*;
 import dev.mccue.resolve.doc.Coursier;
 import dev.mccue.resolve.doc.Rife;
 import dev.mccue.resolve.util.LL;
@@ -27,6 +26,7 @@ final class PomParser extends DefaultHandler {
 
     // Each "path" in the document has potentially a registered handler.
     // If it doesn't have one, we still want to track it so popping and
+    // pushing are symmetrical
     LL<Optional<Handler>> handlers = new LL.Nil<>();
 
     // handlers
@@ -247,26 +247,20 @@ final class PomParser extends DefaultHandler {
                 },
                 content(
                         new LL.Cons<>("groupId", prefix),
-                        (state, content) -> {
-                            state.dependencyGroupId =
-                                    new PomGroupId.Declared(content);
-                        }
+                        (state, content) -> state.dependencyGroupId =
+                                new PomGroupId.Declared(content)
                 ),
                 content(
                         new LL.Cons<>("artifactId", prefix),
-                        (state, content) -> {
-                            if (!content.isBlank()) {
+                        (state, content) ->
                                 state.dependencyArtifactId =
-                                        new PomArtifactId.Declared(content);
-                            }
-                        }
+                                        new PomArtifactId.Declared(content)
                 ),
                 content(
                         new LL.Cons<>("version", prefix),
-                        (state, content) -> {
+                        (state, content) ->
                             state.dependencyVersion =
-                                    new PomVersion.Declared(content);
-                        }
+                                    new PomVersion.Declared(content)
 
                 ),
                 content(
@@ -385,60 +379,38 @@ final class PomParser extends DefaultHandler {
         handlers.addAll(List.of(
                 content(
                         List.of("groupId", "project"),
-                        (state, content) -> {
-                            if (!content.isBlank()) {
-                                state.groupId = new PomGroupId.Declared(content);
-                            }
-                        }
-
+                        (state, content) ->
+                                state.groupId = new PomGroupId.Declared(content)
                 ),
                 content(
                         List.of("artifactId", "project"),
-                        (state, content) ->{
-                            if (!content.isBlank()) {
-                                state.artifactId = new PomArtifactId.Declared(content);
-                            }
-                        }
+                        (state, content) ->
+                                state.artifactId = new PomArtifactId.Declared(content)
                 ),
                 content(
                         List.of("version", "project"),
-                        (state, content) ->{
-                            if (!content.isBlank()) {
-                                state.version = new PomVersion.Declared(content);
-                            }
-                        }
+                        (state, content) ->
+                                state.version = new PomVersion.Declared(content)
                 ),
                 content(
                         List.of("groupId", "parent", "project"),
-                        (state, content) -> {
-                            if (!content.isBlank()) {
-                                state.parentGroupId = new PomGroupId.Declared(content);
-                            }
-                        }
+                        (state, content) ->
+                                state.parentGroupId = new PomGroupId.Declared(content)
                 ),
                 content(
                         List.of("artifactId", "parent", "project"),
-                        (state, content) -> {
-                            if (!content.isBlank()) {
-                                state.parentArtifactId = new PomArtifactId.Declared(content);
-                            }
-                        }
+                        (state, content) ->
+                                state.parentArtifactId = new PomArtifactId.Declared(content)
                 ),
                 content(
                         List.of("version", "parent", "project"),
-                        (state, content) -> {
-                            if (!content.isBlank()) {
-                                state.parentVersion = new PomVersion.Declared(content);
-                            }
-                        }
+                        (state, content) ->
+                                state.parentVersion = new PomVersion.Declared(content)
                 ),
                 content(
                         List.of("packaging", "project"),
-                        (state, content) -> {
-                            if (!content.isBlank()) {
-                                state.packaging = new PomPackaging.Declared(content);
-                            }
-                        }
+                        (state, content) ->
+                                state.packaging = new PomPackaging.Declared(content)
                 )
         ));
 
@@ -467,11 +439,11 @@ final class PomParser extends DefaultHandler {
                 ));
     }
 
-    public PomInfo pomInfo() {
+    PomInfo pomInfo() {
         return this.state.pomInfo();
     }
 
-    public static PomInfo parse(String pomString) {
+    static PomInfo parse(String pomString) {
         var pomParser = new PomParser();
         var factory = SAXParserFactory.newDefaultInstance();
         try {

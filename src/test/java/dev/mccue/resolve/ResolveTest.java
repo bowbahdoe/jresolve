@@ -48,29 +48,29 @@ public class ResolveTest {
         }
     }
 
-    static Dependency fake(String group, String artifact, int version, List<Dependency> manifest) {
-        return new Dependency(new Library(group, artifact), new FakeCoordinate(version, new FakeManifest(manifest)));
+    static Dependency fake(String artifact, int version, List<Dependency> manifest) {
+        return new Dependency(new Library("ex", artifact), new FakeCoordinate(version, new FakeManifest(manifest)));
     }
 
-    static Dependency fake(String group, String artifact, int version, List<Dependency> manifest, Exclusions exclusions) {
-        return new Dependency(new Library(group, artifact), new FakeCoordinate(version, new FakeManifest(manifest)), exclusions);
+    static Dependency fake(String artifact, int version, List<Dependency> manifest, Exclusions exclusions) {
+        return new Dependency(new Library("ex", artifact), new FakeCoordinate(version, new FakeManifest(manifest)), exclusions);
     }
 
-    static Dependency fake(String group, String artifact, int version) {
-        return fake(group, artifact, version, List.of());
+    static Dependency fake(String artifact, int version) {
+        return fake(artifact, version, List.of());
     }
 
     @Test
     public void testPickTop() {
         var resolution = new Resolve()
                 .addDependency(
-                        fake("org", "a", 1, List.of(
-                                fake("org", "b", 2),
-                                fake("org", "c", 2)
+                        fake("A", 1, List.of(
+                                fake("B", 2),
+                                fake("C", 2)
                         ))
                 )
                 .addDependency(
-                        fake("org", "b", 1)
+                        fake("B", 1)
                 )
                 .run();
 
@@ -80,33 +80,28 @@ public class ResolveTest {
     @Test
     public void testExclusions() {
         var dep = fake(
-                "ex", "A", 1, List.of(
-                   fake("ex", "B", 1, List.of(
-                           fake("ex", "C", 1, List.of(
-                                   fake("ex", "X", 1, List.of()),
-                                   fake("ex", "Y", 1, List.of()),
-                                   fake("ex", "Z", 1, List.of())
-                           ), Exclusions.of(List.of(
+                "A", 1, List.of(
+                   fake("B", 1, List.of(
+                           fake("C", 1, List.of(
+                                   fake("X", 1, List.of()),
+                                   fake( "Y", 1, List.of()),
+                                   fake( "Z", 1, List.of())
+                           ), Exclusions.of(
                                    new Exclusion(Group.ALL, new Artifact("X")),
                                    new Exclusion(Group.ALL, new Artifact("Y"))
-                           )))
-                   )),
-                   fake("ex", "D", 1, List.of(
-                           fake("ex", "C", 1, List.of(
-                                           fake("ex", "X", 1, List.of()),
-                                           fake("ex", "Y", 1, List.of()),
-                                           fake("ex", "Z", 1, List.of())
-                           ), Exclusions.of(List.of(
-                                   new Exclusion(Group.ALL, new Artifact("X"))
                            ))
+                   )),
+                   fake( "D", 1, List.of(
+                           fake("C", 1, List.of(
+                                           fake( "X", 1, List.of()),
+                                           fake( "Y", 1, List.of()),
+                                           fake( "Z", 1, List.of())
+                           ), Exclusions.of(
+                                   new Exclusion(Group.ALL, new Artifact("X"))
+                           )
                    ))
                 )));
 
         new Resolve().addDependency(dep).run().versionMap().printPrettyString();
-
-        System.out.println(Exclusions.of(List.of(
-                new Exclusion(Group.ALL, new Artifact("X")),
-                new Exclusion(Group.ALL, new Artifact("Y"))
-        )));
     }
 }

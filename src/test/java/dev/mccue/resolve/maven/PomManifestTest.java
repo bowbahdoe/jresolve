@@ -26,11 +26,11 @@ public class PomManifestTest {
                 List.of(
                         new Dependency(
                             new Library("org.clojure", "spec.alpha"),
-                            new MavenCoordinate(new Version("0.3.218"), MAVEN_CENTRAL)
+                            new MavenCoordinate("0.3.218", MAVEN_CENTRAL)
                         ),
                         new Dependency(
                                 new Library("org.clojure", "core.specs.alpha"),
-                                new MavenCoordinate(new Version("0.2.62"), MAVEN_CENTRAL)
+                                new MavenCoordinate("0.2.62", MAVEN_CENTRAL)
                         )
                 )
         ));
@@ -58,39 +58,39 @@ public class PomManifestTest {
         assertEquals(vaadinCompileManifest, new PomManifest(List.of(
                 new Dependency(
                         new Library("com.vaadin", "vaadin-core"),
-                        new MavenCoordinate(new Version("23.3.7"), MAVEN_CENTRAL)
+                        new MavenCoordinate("23.3.7", MAVEN_CENTRAL)
                 ),
                 new Dependency(
                         new Library("com.vaadin", "vaadin-board-flow"),
-                        new MavenCoordinate(new Version("23.3.7"), MAVEN_CENTRAL)
+                        new MavenCoordinate("23.3.7", MAVEN_CENTRAL)
                 ),
                 new Dependency(
                         new Library("com.vaadin", "vaadin-charts-flow"),
-                        new MavenCoordinate(new Version("23.3.7"), MAVEN_CENTRAL)
+                        new MavenCoordinate("23.3.7", MAVEN_CENTRAL)
                 ),
                 new Dependency(
                         new Library("com.vaadin", "vaadin-cookie-consent-flow"),
-                        new MavenCoordinate(new Version("23.3.7"), MAVEN_CENTRAL)
+                        new MavenCoordinate("23.3.7", MAVEN_CENTRAL)
                 ),
                 new Dependency(
                         new Library("com.vaadin", "vaadin-crud-flow"),
-                        new MavenCoordinate(new Version("23.3.7"), MAVEN_CENTRAL)
+                        new MavenCoordinate("23.3.7", MAVEN_CENTRAL)
                 ),
                 new Dependency(
                         new Library("com.vaadin", "vaadin-grid-pro-flow"),
-                        new MavenCoordinate(new Version("23.3.7"), MAVEN_CENTRAL)
+                        new MavenCoordinate("23.3.7", MAVEN_CENTRAL)
                 ),
                 new Dependency(
                         new Library("com.vaadin", "vaadin-map-flow"),
-                        new MavenCoordinate(new Version("23.3.7"), MAVEN_CENTRAL)
+                        new MavenCoordinate("23.3.7", MAVEN_CENTRAL)
                 ),
                 new Dependency(
                         new Library("com.vaadin", "vaadin-rich-text-editor-flow"),
-                        new MavenCoordinate(new Version("23.3.7"), MAVEN_CENTRAL)
+                        new MavenCoordinate("23.3.7", MAVEN_CENTRAL)
                 ),
                 new Dependency(
                         new Library("com.vaadin", "collaboration-engine"),
-                        new MavenCoordinate(new Version("5.3.0"), MAVEN_CENTRAL)
+                        new MavenCoordinate("5.3.0", MAVEN_CENTRAL)
                 )
         )));
     }

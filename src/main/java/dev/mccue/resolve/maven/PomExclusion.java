@@ -4,4 +4,5 @@ record PomExclusion(
         PomGroupId groupId,
         PomArtifactId artifactId
 ) {
+
 }

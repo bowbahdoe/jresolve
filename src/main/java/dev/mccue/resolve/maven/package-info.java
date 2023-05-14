@@ -15,7 +15,7 @@
  *        |
  *        |   Fetch BOMs and other deps with import scope
  *        v
- *      ?????  EffectivePomInfoWithImports
+ *      ?????
  *        |
  *        |   Collapse dependency and dependency-management
  *        v

@@ -17,7 +17,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public sealed abstract class MavenRepository permits RemoteMavenRepository, LocalMavenRepository {
+public sealed abstract class MavenRepository
+        permits RemoteMavenRepository, LocalMavenRepository {
     public static MavenRepository central() {
         return RemoteMavenRepository.MAVEN_CENTRAL;
     }
@@ -31,11 +32,11 @@ public sealed abstract class MavenRepository permits RemoteMavenRepository, Loca
     }
 
     public static MavenRepository remote(String url, Supplier<HttpClient> httpClient) {
-        return new RemoteMavenRepository(url);
+        return new RemoteMavenRepository(url, httpClient);
     }
 
     public static MavenRepository remote(String url, Consumer<HttpRequest.Builder> enrichRequest) {
-        return new RemoteMavenRepository(url);
+        return new RemoteMavenRepository(url, enrichRequest);
     }
 
     public static MavenRepository remote(
@@ -43,7 +44,7 @@ public sealed abstract class MavenRepository permits RemoteMavenRepository, Loca
             Supplier<HttpClient> httpClient,
             Consumer<HttpRequest.Builder> enrichRequest
     ) {
-        return new RemoteMavenRepository(url);
+        return new RemoteMavenRepository(url, httpClient, enrichRequest);
     }
 
     public static MavenRepository local() {
@@ -96,6 +97,30 @@ public sealed abstract class MavenRepository permits RemoteMavenRepository, Loca
             result.append(".");
             result.append(extension);
         }
+
+        return URI.create(result.toString());
+    }
+
+    abstract URI getMetadataUri(
+            Library library
+    );
+
+    final URI getMetadataUri(
+            StringBuilder result,
+            Library library
+    ) {
+
+        var groupPath = library
+                .group()
+                .toString()
+                .replace(".", "/");
+
+        result
+                .append(groupPath)
+                .append("/")
+                .append(library.artifact())
+                .append("/")
+                .append("maven-metadata.xml");
 
         return URI.create(result.toString());
     }
@@ -193,4 +218,12 @@ public sealed abstract class MavenRepository permits RemoteMavenRepository, Loca
             Classifier classifier,
             Extension extension
     ) throws LibraryNotFound;
+
+    abstract InputStream getMetadata(
+            Library library
+    );
+
+    MavenMetadata getMavenMetadata(Library library) throws IOException {
+        return MavenMetadata.parseXml(new String(getMetadata(library).readAllBytes(), StandardCharsets.UTF_8));
+    }
 }

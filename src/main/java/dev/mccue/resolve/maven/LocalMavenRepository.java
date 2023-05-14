@@ -34,9 +34,24 @@ public final class LocalMavenRepository extends MavenRepository {
     }
 
     @Override
+    URI getMetadataUri(Library library) {
+        var result = new StringBuilder("file:/");
+        return getMetadataUri(result, library);
+    }
+
+    @Override
     InputStream getFile(Library library, Version version, Classifier classifier, Extension extension) throws LibraryNotFound {
         try {
             return Files.newInputStream(Path.of(getArtifactUri(library, version, classifier, extension)));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @Override
+    InputStream getMetadata(Library library) {
+        try {
+            return Files.newInputStream(Path.of(getMetadataUri(library)));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

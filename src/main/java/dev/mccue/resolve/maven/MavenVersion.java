@@ -9,10 +9,5 @@ import java.util.Optional;
  */
 sealed interface MavenVersion {
     record Known(Version version) implements MavenVersion {}
-    record Range(
-            Optional<Version> start,
-            Optional<Version> end,
-            boolean startInclusive,
-            boolean endInclusive
-    ) implements MavenVersion {}
+    record Range(VersionRange versionRange) implements MavenVersion {}
 }

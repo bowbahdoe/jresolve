@@ -34,11 +34,7 @@ public record MavenCoordinate(
     }
 
     public MavenCoordinate(String version, MavenRepository repository) {
-        this(
-                new Version(version),
-                List.of(repository),
-                List.of()
-        );
+        this(new Version(version), repository);
     }
 
     public MavenCoordinate(Version version, MavenRepository repository) {
@@ -91,7 +87,7 @@ public record MavenCoordinate(
                 return cache.fetchIfAbsent(key, () -> repository.getFile(
                         library,
                         version,
-                        Classifier.EMPTY,
+                        library.classifier(),
                         Extension.JAR
                 ));
             } catch (LibraryNotFound ignored) {
@@ -105,11 +101,11 @@ public record MavenCoordinate(
     public Optional<Path> getLibrarySourcesLocation(Library library, Cache cache) {
         for (var repository : repositories) {
             try {
-                var key = artifactKey(repository, library, Classifier.EMPTY, Extension.JAR);
+                var key = artifactKey(repository, library, Classifier.SOURCES, Extension.JAR);
                 return Optional.of(cache.fetchIfAbsent(key, () -> repository.getFile(
                         library,
                         version,
-                        Classifier.EMPTY,
+                        Classifier.SOURCES,
                         Extension.JAR
                 )));
             } catch (LibraryNotFound ignored) {
@@ -122,7 +118,7 @@ public record MavenCoordinate(
     public Optional<Path> getLibraryDocumentationLocation(Library library, Cache cache) {
         for (var repository : repositories) {
             try {
-                var key = artifactKey(repository, library, Classifier.EMPTY, Extension.JAR);
+                var key = artifactKey(repository, library, Classifier.JAVADOC, Extension.JAR);
                 return Optional.of(cache.fetchIfAbsent(key, () -> repository.getFile(
                         library,
                         version,
