@@ -11,14 +11,14 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public final class LocalMavenRepository extends MavenRepository {
+final class LocalMavenRepository extends MavenRepository {
     private final Path root;
 
-    public LocalMavenRepository(Path root) {
+    LocalMavenRepository(Path root) {
         this.root = root;
     }
 
-    public LocalMavenRepository() {
+    LocalMavenRepository() {
         this(Path.of(System.getProperty("user.home"), ".m2"));
     }
 

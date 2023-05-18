@@ -26,10 +26,6 @@ import java.util.function.Supplier;
 final class RemoteMavenRepository extends MavenRepository {
     static final RemoteMavenRepository MAVEN_CENTRAL =
             new RemoteMavenRepository("https://repo1.maven.org/maven2/");
-    static final RemoteMavenRepository SONATYPE_SNAPSHOTS =
-            new RemoteMavenRepository("https://s01.oss.sonatype.org/content/repositories/snapshots/");
-    static final RemoteMavenRepository CLOJARS =
-            new RemoteMavenRepository("https://clojars.org/repo");
 
     private final String url;
     private final Lazy<HttpClient> httpClient;

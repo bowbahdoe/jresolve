@@ -8,11 +8,11 @@ import java.util.function.Supplier;
 
 public record StandardCache(Path root) implements Cache {
     public StandardCache() {
-        this(java.nio.file.Path.of(System.getProperty("user.home"), ".jresolve"));
+        this(Path.of(System.getProperty("user.home"), ".jresolve"));
     }
 
     private Path keyPath(List<String> key) {
-        return java.nio.file.Path.of(
+        return Path.of(
                 root.toString(),
                 key.toArray(String[]::new)
         );

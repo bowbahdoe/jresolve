@@ -271,7 +271,5 @@ public final class PomParserTest {
                 PomParser.parse(pom).parent(),
                 PomParent.Undeclared.INSTANCE
         );
-
     }
-
 }

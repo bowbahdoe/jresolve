@@ -4,6 +4,7 @@ package dev.mccue.resolve;
 import dev.mccue.resolve.util.LL;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 final class VersionMap {
@@ -71,6 +72,20 @@ final class VersionMap {
         else {
             return Optional.ofNullable(entry.currentSelection);
         }
+    }
+
+    public Optional<Coordinate> selectedDep(Library library) {
+        return selectedVersion(library)
+                .map(this.value.get(library).versions::get);
+    }
+
+    public Map<Library, CoordinateId> selectedCoordinateIds() {
+        return value.entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().currentSelection
+                ));
     }
 
     public Optional<HashSet<LL<Library>>> selectedPaths(Library library) {
@@ -151,21 +166,20 @@ final class VersionMap {
             return InclusionDecision.SAME_VERSION;
         }
         else {
-            var selectedVersion = selectedVersion(library)
-                    .map(version -> value.get(library))
-                    .map(entry -> entry.versions.get(coordinateId))
-                    .orElse(null);
+            System.out.println(selectedVersion(library));
+            var selectedDep = selectedDep(library)
+                    .orElseThrow();
+            Objects.requireNonNull(selectedDep, "selectedVersion");
 
-            var comparison = coordinate.compareVersions(selectedVersion);
+            var comparison = coordinate.compareVersions(selectedDep);
             if (comparison == Coordinate.VersionComparison.INCOMPARABLE) {
-                throw new RuntimeException("Incomparable coordinates");
+                throw new RuntimeException("Incomparable coordinates: " + coordinate.getClass() + ", " + selectedDep.getClass());
             }
             else if (comparison == Coordinate.VersionComparison.GREATER_THAN) {
                 addVersion(library, coordinate, dependencyPath, coordinateId);
                 // TODO
                 deselectOrphans(List.of());
                 selectVersion(library, coordinateId, false);
-
                 return InclusionDecision.NEWER_VERSION;
             }
             else {

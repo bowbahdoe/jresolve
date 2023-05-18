@@ -23,10 +23,6 @@ public sealed abstract class MavenRepository
         return RemoteMavenRepository.MAVEN_CENTRAL;
     }
 
-    public static MavenRepository clojars() {
-        return RemoteMavenRepository.CLOJARS;
-    }
-
     public static MavenRepository remote(String url) {
         return new RemoteMavenRepository(url);
     }

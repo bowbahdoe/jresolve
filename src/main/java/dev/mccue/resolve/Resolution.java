@@ -44,6 +44,8 @@ public record Resolution(
     /**
      * @param initialDependencies  each dependency is defined as a lib (symbol) and coordinate (maven, git, local, etc)
      * @param overrideDependencies a map of lib to coord to use if lib is found
+     * @param executorService      an executor to use for the task of downloading individual files
+     * @param cache                cache for files.
      */
     static Resolution expandDependencies(
             Map<Library, Dependency> initialDependencies,
@@ -79,6 +81,7 @@ public record Resolution(
                     library,
                     queueEntry.dependency
             );
+
             var coordinate = dependency.coordinate();
             var coordinateId = coordinate.id();
 

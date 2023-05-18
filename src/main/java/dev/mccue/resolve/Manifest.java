@@ -8,5 +8,10 @@ import java.util.List;
 public interface Manifest {
     Manifest EMPTY = List::of;
 
+    static Manifest of(List<? extends Dependency> dependencies) {
+        return () -> List.copyOf(dependencies);
+    }
+
     List<Dependency> dependencies();
+
 }
