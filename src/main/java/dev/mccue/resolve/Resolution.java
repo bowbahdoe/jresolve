@@ -15,22 +15,20 @@ public record Resolution(
         VersionMap versionMap,
         Trace trace
 ) {
-    private record CutKey(Library library, CoordinateId coordinateId) {}
-
     static Exclusions updateExclusions(
             Library library,
             InclusionDecision inclusionDecision,
             CoordinateId coordinateId,
-            LL<Library> usePath,
-            HashMap<CutKey, Exclusions> cut,
+            LL<DependencyId> usePath,
+            HashMap<DependencyId, Exclusions> cut,
             Exclusions exclusions
     ) {
         if (inclusionDecision.included()) {
-            cut.put(new CutKey(library, coordinateId), exclusions);
+            cut.put(new DependencyId(library, coordinateId), exclusions);
             return exclusions;
         }
         else if (inclusionDecision == InclusionDecision.SAME_VERSION) {
-            var key = new CutKey(library, coordinateId);
+            var key = new DependencyId(library, coordinateId);
             var cutCoord = cut.get(key);
             var newCut = cutCoord.meet(exclusions);
             cut.put(key, newCut);
@@ -44,21 +42,17 @@ public record Resolution(
     /**
      * @param initialDependencies  each dependency is defined as a lib (symbol) and coordinate (maven, git, local, etc)
      * @param overrideDependencies a map of lib to coord to use if lib is found
-     * @param executorService      an executor to use for the task of downloading individual files
      * @param cache                cache for files.
      */
     static Resolution expandDependencies(
             Map<Library, Dependency> initialDependencies,
             Map<Library, Dependency> overrideDependencies,
-            ExecutorService executorService,
             Cache cache
     ) {
-
-
-        var cut = new HashMap<CutKey, Exclusions>();
+        var cut = new HashMap<DependencyId, Exclusions>();
         record QueueEntry(
                 Dependency dependency,
-                LL<Library> path
+                LL<DependencyId> path
         ) {
         }
 
@@ -100,18 +94,20 @@ public record Resolution(
                     dependency.exclusions()
             );
 
-            Manifest manifest = () -> coordinate.getManifest(library, cache)
-                    .dependencies()
-                    .stream()
-                    .filter(dep -> exclusions.shouldInclude(dep.library()))
-                    .map(dep -> dep.withExclusions(dep.exclusions().join(exclusions)))
-                    .toList();
+            if (decision.included()) {
+                Manifest manifest = () -> coordinate.getManifest(library, cache)
+                        .dependencies()
+                        .stream()
+                        .filter(dep -> exclusions.shouldInclude(dep.library()))
+                        .map(dep -> dep.withExclusions(dep.exclusions().join(exclusions)))
+                        .toList();
 
-            for (var manifestDep : manifest.dependencies()) {
-                q.add(new QueueEntry(
-                        manifestDep,
-                        queueEntry.path.prepend(queueEntry.dependency.library())
-                ));
+                for (var manifestDep : manifest.dependencies()) {
+                    q.add(new QueueEntry(
+                            manifestDep,
+                            queueEntry.path.prepend(new DependencyId(queueEntry.dependency))
+                    ));
+                }
             }
         }
 

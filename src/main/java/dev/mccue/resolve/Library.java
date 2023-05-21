@@ -11,20 +11,16 @@ import java.util.Objects;
 public record Library(
         Group group,
         Artifact artifact,
-        @ToolsDeps(
-                value = "https://clojurians.slack.com/archives/C0H28NMAS/p1680365565612789?thread_ts=1680362691.333169&cid=C0H28NMAS",
-                details = "TDeps makes classifier part of the artifact group/artifact[$classifier]"
-        )
-        Classifier classifier
+        Variant variant
 ) {
     public Library {
         Objects.requireNonNull(group);
         Objects.requireNonNull(artifact);
-        Objects.requireNonNull(classifier);
+        Objects.requireNonNull(variant);
     }
 
     public Library(Group group, Artifact artifact) {
-        this(group, artifact, Classifier.EMPTY);
+        this(group, artifact, Variant.DEFAULT);
     }
 
     public Library(String group, String artifact) {
@@ -33,8 +29,11 @@ public record Library(
 
     @Override
     public String toString() {
-        return "Library[group=" + group + ", artifact=" + artifact + (classifier.equals(Classifier.EMPTY)
-                ? "]"
-                : ", classifier=" + classifier + "]");
+        return "Library[group="
+                + group
+                + ", artifact="
+                + artifact
+                + (variant.equals(Variant.DEFAULT) ? "" : ", variant=" + variant)
+                + "]";
     }
 }

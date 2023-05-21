@@ -1,23 +1,33 @@
 package dev.mccue.resolve.maven;
 
 import dev.mccue.resolve.*;
+import dev.mccue.resolve.doc.ToolsDeps;
 
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 public record MavenCoordinate(
         Version version,
         List<MavenRepository> repositories,
-        List<Scope> scopes
+        List<Scope> scopes,
+        @ToolsDeps(
+                value = "https://clojurians.slack.com/archives/C0H28NMAS/p1680365565612789?thread_ts=1680362691.333169&cid=C0H28NMAS",
+                details = "TDeps makes classifier part of the artifact group/artifact[$classifier]"
+        )
+        Classifier classifier,
+        Classifier sourceClassifier,
+        Classifier documentationClassifier
 ) implements Coordinate {
 
     public MavenCoordinate(
             Version version,
             List<MavenRepository> repositories,
-            List<Scope> scopes
+            List<Scope> scopes,
+            Classifier classifier,
+            Classifier sourceClassifier,
+            Classifier documentationClassifier
     ) {
         this.version = version;
         this.repositories = List.copyOf(repositories);
@@ -27,6 +37,17 @@ public record MavenCoordinate(
         else {
             this.scopes = List.copyOf(scopes);
         }
+        this.classifier = classifier;
+        this.sourceClassifier = sourceClassifier;
+        this.documentationClassifier = documentationClassifier;
+    }
+
+    public MavenCoordinate(
+            Version version,
+            List<MavenRepository> repositories,
+            List<Scope> scopes
+    ) {
+        this(version, repositories, scopes, Classifier.EMPTY, Classifier.SOURCES, Classifier.JAVADOC);
     }
 
     public MavenCoordinate(String version) {
@@ -42,12 +63,12 @@ public record MavenCoordinate(
     }
 
     @Override
-    public VersionComparison compareVersions(Coordinate coordinate) {
+    public VersionOrdering compareVersions(Coordinate coordinate) {
         if (!(coordinate instanceof MavenCoordinate mavenCoordinate)) {
-            return VersionComparison.INCOMPARABLE;
+            return VersionOrdering.INCOMPARABLE;
         }
         else {
-            return VersionComparison.fromInt(
+            return VersionOrdering.fromInt(
                     this.version.compareTo(mavenCoordinate.version)
             );
         }
@@ -58,13 +79,13 @@ public record MavenCoordinate(
         return new MavenCoordinateId(version);
     }
 
-    List<String> artifactKey(MavenRepository repository, Library library, Classifier classifier, Extension extension) {
+    CacheKey artifactKey(MavenRepository repository, Library library, Classifier classifier, Extension extension) {
         var uri = repository.getArtifactUri(library, version, classifier, extension);
         return artifactKey(uri);
     }
 
-    static List<String> artifactKey(URI artifactUri) {
-        return List.copyOf(Arrays.asList(artifactUri.toASCIIString().split("((:)*/)+")));
+    static CacheKey artifactKey(URI artifactUri) {
+        return new CacheKey(artifactUri.toASCIIString().split("((:)*/)+"));
     }
 
     @Override
@@ -87,7 +108,7 @@ public record MavenCoordinate(
                 return cache.fetchIfAbsent(key, () -> repository.getFile(
                         library,
                         version,
-                        library.classifier(),
+                        classifier,
                         Extension.JAR
                 ));
             } catch (LibraryNotFound ignored) {
@@ -105,7 +126,7 @@ public record MavenCoordinate(
                 return Optional.of(cache.fetchIfAbsent(key, () -> repository.getFile(
                         library,
                         version,
-                        Classifier.SOURCES,
+                        sourceClassifier,
                         Extension.JAR
                 )));
             } catch (LibraryNotFound ignored) {
@@ -122,7 +143,7 @@ public record MavenCoordinate(
                 return Optional.of(cache.fetchIfAbsent(key, () -> repository.getFile(
                         library,
                         version,
-                        Classifier.JAVADOC,
+                        documentationClassifier,
                         Extension.JAR
                 )));
             } catch (LibraryNotFound ignored) {

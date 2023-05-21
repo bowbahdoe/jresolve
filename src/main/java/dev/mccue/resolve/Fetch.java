@@ -1,5 +1,7 @@
 package dev.mccue.resolve;
 
+import dev.mccue.resolve.maven.Classifier;
+
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -40,10 +42,6 @@ public final class Fetch {
     }
 
 
-    public Fetch withExecutorService(ExecutorService executorService) {
-        this.resolve.withExecutorService(executorService);
-        return this;
-    }
 
     public Fetch addClassifier(Classifier classifier) {
         this.classifiers.add(classifier);

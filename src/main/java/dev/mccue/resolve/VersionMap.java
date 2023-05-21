@@ -16,7 +16,7 @@ final class VersionMap {
 
     public record Entry(
             HashMap<CoordinateId, Coordinate> versions,
-            HashMap<CoordinateId, HashSet<LL<Library>>> paths,
+            HashMap<CoordinateId, HashSet<LL<DependencyId>>> paths,
             CoordinateId currentSelection,
             boolean topDep
     ) {
@@ -26,7 +26,7 @@ final class VersionMap {
 
         public Entry(
                 HashMap<CoordinateId, Coordinate> versions,
-                HashMap<CoordinateId, HashSet<LL<Library>>> paths
+                HashMap<CoordinateId, HashSet<LL<DependencyId>>> paths
         ) {
             this(versions, paths, null, false);
         }
@@ -43,7 +43,7 @@ final class VersionMap {
     public void addVersion(
             Library library,
             Coordinate coordinate,
-            LL<Library> dependencyPath,
+            LL<DependencyId> dependencyPath,
             CoordinateId coordinateId
     ) {
         var entry = this.value.getOrDefault(library, new Entry());
@@ -82,13 +82,14 @@ final class VersionMap {
     public Map<Library, CoordinateId> selectedCoordinateIds() {
         return value.entrySet()
                 .stream()
+                .filter(entry -> entry.getValue().currentSelection != null)
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         entry -> entry.getValue().currentSelection
                 ));
     }
 
-    public Optional<HashSet<LL<Library>>> selectedPaths(Library library) {
+    public Optional<List<LL<DependencyId>>> selectedPaths(Library library) {
         var entry = this.value.get(library);
         if (entry == null) {
             return Optional.empty();
@@ -99,23 +100,23 @@ final class VersionMap {
                 return Optional.empty();
             }
             else {
-                return Optional.ofNullable(entry.paths.get(selectedVersion));
+                return Optional.ofNullable(List.copyOf(entry.paths.get(selectedVersion)));
             }
         }
     }
 
     public boolean parentMissing(
-            LL<Library> parentDependencyPath
+            LL<DependencyId> parentDependencyPath
     ) {
         if (parentDependencyPath.isEmpty()) {
             return false;
         }
 
         var path = parentDependencyPath;
-        while (path instanceof LL.Cons<Library> consPath) {
-            var lib = consPath.head();
+        while (path instanceof LL.Cons<DependencyId> consPath) {
+            var dependencyId = consPath.head();
             var checkPath = consPath.tail();
-            var vmapEntry = value.get(lib);
+            var vmapEntry = value.get(dependencyId.library());
             if (vmapEntry != null && vmapEntry.paths()
                     .getOrDefault(vmapEntry.currentSelection, new HashSet<>())
                     .contains(checkPath)) {
@@ -130,15 +131,33 @@ final class VersionMap {
     }
 
     public void deselectOrphans(
-            List<LL<Library>> omittedDependencyPaths
+            List<LL<DependencyId>> omittedDependencyPaths
     ) {
+        var toPut = new ArrayList<Map.Entry<Library, Entry>>();
+        for (var kv : this.value.entrySet()) {
+            var library = kv.getKey();
+            var entry = kv.getValue();
 
+            var allPaths = this.selectedPaths(library)
+                    .orElse(List.of());
+
+            boolean deselect = allPaths.stream()
+                    .allMatch(path -> omittedDependencyPaths.stream()
+                            .anyMatch(omittedPath -> omittedPath.isSuffix(path)));
+
+            if (deselect) {
+                var newEntry = entry.withSelection(null);
+                toPut.add(Map.entry(library, newEntry));
+            }
+        }
+
+        toPut.forEach(kv -> this.value.put(kv.getKey(), kv.getValue()));
     }
 
     public InclusionDecision includeCoordinate(
             Dependency dependency,
             CoordinateId coordinateId,
-            LL<Library> dependencyPath
+            LL<DependencyId> dependencyPath
     ) {
         var library = dependency.library();
         var coordinate = dependency.coordinate();
@@ -166,19 +185,25 @@ final class VersionMap {
             return InclusionDecision.SAME_VERSION;
         }
         else {
-            System.out.println(selectedVersion(library));
             var selectedDep = selectedDep(library)
                     .orElseThrow();
             Objects.requireNonNull(selectedDep, "selectedVersion");
 
             var comparison = coordinate.compareVersions(selectedDep);
-            if (comparison == Coordinate.VersionComparison.INCOMPARABLE) {
+            if (comparison == Coordinate.VersionOrdering.INCOMPARABLE) {
                 throw new RuntimeException("Incomparable coordinates: " + coordinate.getClass() + ", " + selectedDep.getClass());
             }
-            else if (comparison == Coordinate.VersionComparison.GREATER_THAN) {
+            else if (comparison == Coordinate.VersionOrdering.GREATER_THAN) {
                 addVersion(library, coordinate, dependencyPath, coordinateId);
-                // TODO
-                deselectOrphans(List.of());
+
+                List<LL<DependencyId>> paths = selectedPaths(library)
+                        .orElseThrow()
+                        .stream()
+                        .map(path -> (LL<DependencyId>) path
+                                .prepend(new DependencyId(library, selectedVersion(library).orElseThrow())))
+                        .toList();
+                deselectOrphans(paths);
+
                 selectVersion(library, coordinateId, false);
                 return InclusionDecision.NEWER_VERSION;
             }

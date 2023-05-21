@@ -5,6 +5,19 @@ import dev.mccue.resolve.doc.ToolsDeps;
 import java.nio.file.Path;
 import java.util.Optional;
 
+/**
+ * A Coordinate says where you can find information about a dependency.
+ * Namely
+ *
+ * <ul>
+ *     <li>The artifact to put on the class/module path.</li>
+ *     <li>The artifact containing library sources.</li>
+ *     <li>The artifact containing library documentation.</li>
+ *     <li>The manifest of required transitive dependencies.</li>
+ * </ul>
+ *
+ * As well as
+ */
 @ToolsDeps(
         value = "https://clojure.org/reference/dep_expansion",
         details = """
@@ -16,50 +29,6 @@ import java.util.Optional;
         """
 )
 public interface Coordinate {
-    Coordinate NONE = new Coordinate() {
-        private static final CoordinateId NONE_ID = new CoordinateId() {
-            @Override
-            public int hashCode() {
-                return 0;
-            }
-
-            @Override
-            public boolean equals(Object obj) {
-                return obj == this;
-            }
-
-            @Override
-            public String toString() {
-                return "NONE_ID";
-            }
-        };
-
-        @Override
-        public VersionComparison compareVersions(Coordinate coordinate) {
-            return coordinate == this ? VersionComparison.EQUAL_TO : VersionComparison.INCOMPARABLE;
-        }
-
-        @Override
-        public CoordinateId id() {
-            return NONE_ID;
-        }
-
-        @Override
-        public Manifest getManifest(Library library, Cache cache) {
-            return Manifest.EMPTY;
-        }
-
-        @Override
-        public Path getLibraryLocation(Library library, Cache cache) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public String toString() {
-            return "NONE";
-        }
-    };
-
     /**
      * In some situations a coordinate might need to consult an external source
      * to know exactly what to do to locate a library.
@@ -82,7 +51,7 @@ public interface Coordinate {
     /**
      * Result of a comparison between two coordinates.
      */
-    enum VersionComparison {
+    enum VersionOrdering {
         /**
          * The two coordinate types cannot be compared to one another.
          */
@@ -92,12 +61,16 @@ public interface Coordinate {
         EQUAL_TO;
 
 
-        public static VersionComparison fromInt(int comparisonResult) {
-            return comparisonResult == 0 ? EQUAL_TO : comparisonResult > 0 ? GREATER_THAN : LESS_THAN;
+        public static VersionOrdering fromInt(int comparisonResult) {
+            return comparisonResult == 0
+                    ? EQUAL_TO
+                    : comparisonResult > 0
+                    ? GREATER_THAN
+                    : LESS_THAN;
         }
     }
 
-    VersionComparison compareVersions(Coordinate coordinate);
+    VersionOrdering compareVersions(Coordinate coordinate);
 
     /**
      * @return An object that is safe to use as a key in hashmaps which acts as an "id"

@@ -12,5 +12,5 @@ public interface Cache {
      * @param data A supplier for the data to store in the cache.
      * @return A {@link Path} containing the data.
      */
-    Path fetchIfAbsent(List<String> key, Supplier<InputStream> data);
+    Path fetchIfAbsent(CacheKey key, Supplier<InputStream> data);
 }

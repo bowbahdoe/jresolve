@@ -1,7 +1,5 @@
 package dev.mccue.resolve.maven;
 
-import dev.mccue.resolve.Classifier;
-
 import java.util.Objects;
 import java.util.function.Function;
 

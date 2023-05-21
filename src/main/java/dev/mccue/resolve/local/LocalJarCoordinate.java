@@ -3,12 +3,11 @@ package dev.mccue.resolve.local;
 import dev.mccue.resolve.*;
 
 import java.nio.file.Path;
-import java.util.List;
 
 public record LocalJarCoordinate(Path path) implements Coordinate {
     @Override
-    public VersionComparison compareVersions(Coordinate coordinate) {
-        return VersionComparison.INCOMPARABLE;
+    public VersionOrdering compareVersions(Coordinate coordinate) {
+        return VersionOrdering.INCOMPARABLE;
     }
 
     @Override

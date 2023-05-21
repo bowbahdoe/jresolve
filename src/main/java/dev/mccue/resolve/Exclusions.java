@@ -1,11 +1,13 @@
 package dev.mccue.resolve;
 
 import dev.mccue.resolve.doc.Coursier;
+import dev.mccue.resolve.doc.Gold;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Gold
 @Coursier("https://github.com/coursier/coursier/blob/f5f0870/modules/core/shared/src/main/scala/coursier/core/MinimizedExclusions.scala")
 public final class Exclusions {
     public static final Exclusions NONE = new Exclusions(ExcludeNone.INSTANCE);
@@ -42,8 +44,8 @@ public final class Exclusions {
             return NONE;
         }
 
-        var excludeByOrg0 = new HashSet<Group>();
-        var excludeByName0 = new HashSet<Artifact>();
+        var excludeByGroup0 = new HashSet<Group>();
+        var excludeByArtifact0 = new HashSet<Artifact>();
         var remaining0 = new HashSet<Exclusion>();
 
         for (var exclusion : exclusions) {
@@ -51,22 +53,22 @@ public final class Exclusions {
                 if (Artifact.ALL.equals(exclusion.artifact())) {
                     return ALL;
                 } else {
-                    excludeByName0.add(exclusion.artifact());
+                    excludeByArtifact0.add(exclusion.artifact());
                 }
             } else if (Artifact.ALL.equals(exclusion.artifact())) {
-                excludeByOrg0.add(exclusion.group());
+                excludeByGroup0.add(exclusion.group());
             } else {
                 remaining0.add(exclusion);
             }
         }
 
         return new Exclusions(new ExcludeSpecific(
-                Set.copyOf(excludeByOrg0),
-                Set.copyOf(excludeByName0),
+                Set.copyOf(excludeByGroup0),
+                Set.copyOf(excludeByArtifact0),
                 remaining0.stream()
                         .filter(exclusion ->
-                                !excludeByOrg0.contains(exclusion.group())
-                                    && !excludeByName0.contains(exclusion.artifact()))
+                                !excludeByGroup0.contains(exclusion.group())
+                                    && !excludeByArtifact0.contains(exclusion.artifact()))
                         .collect(Collectors.toUnmodifiableSet()))
         );
     }
@@ -263,13 +265,13 @@ public final class Exclusions {
                         Set<Exclusion> otherSpecific
                 ) -> {
 
-                    var joinedByOrg = new HashSet<Group>();
-                    joinedByOrg.addAll(this.byGroup);
-                    joinedByOrg.addAll(otherByOrg);
+                    var joinedByGroup = new HashSet<Group>();
+                    joinedByGroup.addAll(this.byGroup);
+                    joinedByGroup.addAll(otherByOrg);
 
-                    var joinedByModule = new HashSet<Artifact>();
-                    joinedByModule.addAll(this.byArtifact);
-                    joinedByModule.addAll(otherByArtifact);
+                    var joinedByArtifact = new HashSet<Artifact>();
+                    joinedByArtifact.addAll(this.byArtifact);
+                    joinedByArtifact.addAll(otherByArtifact);
 
                     var joinedSpecific = new HashSet<Exclusion>();
                     this.specific
@@ -287,8 +289,8 @@ public final class Exclusions {
                             .forEach(joinedSpecific::add);
 
                     yield new ExcludeSpecific(
-                            Set.copyOf(joinedByOrg),
-                            Set.copyOf(joinedByModule),
+                            Set.copyOf(joinedByGroup),
+                            Set.copyOf(joinedByArtifact),
                             Set.copyOf(joinedSpecific)
                     );
                 }
@@ -301,46 +303,46 @@ public final class Exclusions {
                 case ExcludeNone none -> none;
                 case ExcludeAll __ -> this;
                 case ExcludeSpecific(
-                        Set<Group> otherByOrg,
-                        Set<Artifact> otherByModule,
+                        Set<Group> otherByGroup,
+                        Set<Artifact> otherByArtifact,
                         Set<Exclusion> otherSpecific
                 )  -> {
-                    var metByOrg = byGroup.stream()
-                            .filter(otherByOrg::contains)
+                    var metByGroup = byGroup.stream()
+                            .filter(otherByGroup::contains)
                             .collect(Collectors.toUnmodifiableSet());
 
-                    var metByModule = byArtifact.stream()
-                            .filter(otherByModule::contains)
+                    var metByArtifact = byArtifact.stream()
+                            .filter(otherByArtifact::contains)
                             .collect(Collectors.toUnmodifiableSet());
 
                     var metSpecific = new HashSet<Exclusion>();
                     specific.stream()
                             .filter(exclusion -> {
-                                var org = exclusion.group();
-                                var moduleName = exclusion.artifact();
-                                return otherByOrg.contains(org) ||
-                                        otherByModule.contains(moduleName) ||
+                                var group = exclusion.group();
+                                var artifact = exclusion.artifact();
+                                return otherByGroup.contains(group) ||
+                                        otherByArtifact.contains(artifact) ||
                                         otherSpecific.contains(exclusion);
                             })
                             .forEach(metSpecific::add);
 
                     otherSpecific.stream()
                             .filter(exclusion -> {
-                                var org = exclusion.group();
-                                var moduleName = exclusion.artifact();
-                                return byGroup.contains(org) ||
-                                        byArtifact.contains(moduleName) ||
+                                var group = exclusion.group();
+                                var artifact = exclusion.artifact();
+                                return byGroup.contains(group) ||
+                                        byArtifact.contains(artifact) ||
                                         specific.contains(exclusion);
                             })
                             .forEach(metSpecific::add);
 
-                    if (metByOrg.isEmpty() && metByModule.isEmpty() && metSpecific.isEmpty()) {
+                    if (metByGroup.isEmpty() && metByArtifact.isEmpty() && metSpecific.isEmpty()) {
                         yield ExcludeNone.INSTANCE;
                     }
                     else {
                         yield new ExcludeSpecific(
-                                metByOrg,
-                                metByModule,
+                                metByGroup,
+                                metByArtifact,
                                 Set.copyOf(metSpecific)
                         );
                     }
@@ -354,10 +356,10 @@ public final class Exclusions {
         public ExclusionData map(Function<String, String> f) {
             return new ExcludeSpecific(
                     byGroup.stream()
-                            .map(org -> org.map(f))
+                            .map(group -> group.map(f))
                             .collect(Collectors.toUnmodifiableSet()),
                     byArtifact.stream()
-                            .map(moduleName -> moduleName.map(f))
+                            .map(artifact -> artifact.map(f))
                             .collect(Collectors.toUnmodifiableSet()),
                     specific.stream()
                             .map(exclusion -> new Exclusion(
@@ -389,10 +391,10 @@ public final class Exclusions {
         public Set<Exclusion> toSet() {
             var set = new HashSet<Exclusion>();
             byGroup.stream()
-                    .map(org -> new Exclusion(org, Artifact.ALL))
+                    .map(group -> new Exclusion(group, Artifact.ALL))
                     .forEach(set::add);
             byArtifact.stream()
-                    .map(moduleName -> new Exclusion(Group.ALL, moduleName))
+                    .map(artifact -> new Exclusion(Group.ALL, artifact))
                     .forEach(set::add);
             set.addAll(specific);
 

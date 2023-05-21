@@ -18,10 +18,10 @@ public class ResolveTest {
 
     record FakeCoordinate(int version, Manifest manifest) implements Coordinate {
         @Override
-        public VersionComparison compareVersions(Coordinate coordinate) {
+        public VersionOrdering compareVersions(Coordinate coordinate) {
             return coordinate instanceof FakeCoordinate fake
-                    ? VersionComparison.fromInt(Integer.compare(this.version, fake.version))
-                    : VersionComparison.INCOMPARABLE;
+                    ? VersionOrdering.fromInt(Integer.compare(this.version, fake.version))
+                    : VersionOrdering.INCOMPARABLE;
         }
 
         @Override
@@ -247,9 +247,8 @@ public class ResolveTest {
      */
     @Test
     public void testCircularDeps() {
-        if (1 < 2) { throw new RuntimeException(); } // TODO
         var aDeps = new ArrayList<Dependency>();
-        aDeps.add(fake("B", 1, List.of(fake("c", 1, aDeps))));
+        aDeps.add(fake("B", 1, List.of(fake("C", 1, aDeps))));
         aDeps.add(fake("C", 2, aDeps));
         var vmap = new Resolve()
                 .addDependency(fake("A", 1, aDeps))

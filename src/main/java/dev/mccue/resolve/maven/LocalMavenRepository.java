@@ -1,6 +1,5 @@
 package dev.mccue.resolve.maven;
 
-import dev.mccue.resolve.Classifier;
 import dev.mccue.resolve.Library;
 import dev.mccue.resolve.Version;
 

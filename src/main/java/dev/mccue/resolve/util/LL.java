@@ -23,6 +23,11 @@ public sealed interface LL<T> extends Iterable<T> {
         }
 
         @Override
+        public boolean isPrefix(LL<T> other) {
+            return true;
+        }
+
+        @Override
         public String toString() {
             return "[]";
         }
@@ -52,6 +57,13 @@ public sealed interface LL<T> extends Iterable<T> {
         @Override
         public boolean isEmpty() {
             return false;
+        }
+
+        @Override
+        public boolean isPrefix(LL<T> other) {
+            return other instanceof LL.Cons<T> otherCons
+                    && otherCons.head.equals(this.head)
+                    && this.tail.isPrefix(otherCons.tail);
         }
 
         @Override
@@ -94,6 +106,12 @@ public sealed interface LL<T> extends Iterable<T> {
             );
         }
         return head;
+    }
+
+    boolean isPrefix(LL<T> other);
+
+    default boolean isSuffix(LL<T> other) {
+        return this.reverse().isPrefix(other.reverse());
     }
 
     default Cons<T> assumeNotEmpty() {

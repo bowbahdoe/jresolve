@@ -113,4 +113,48 @@ public final class LLTest {
         );
     }
 
+    @Test
+    public void testIsPrefix() {
+        assertTrue(
+                LL.fromJavaList(List.of(1, 2, 3)).isPrefix(LL.fromJavaList(List.of(1, 2, 3, 4)))
+        );
+
+        assertFalse(
+                LL.fromJavaList(List.of(1, 2, 3)).isPrefix(LL.fromJavaList(List.of(1, 2)))
+        );
+
+        assertTrue(
+                LL.fromJavaList(List.of(1, 2, 3)).isPrefix(LL.fromJavaList(List.of(1, 2, 3)))
+        );
+
+        assertTrue(
+                LL.fromJavaList(List.of()).isPrefix(LL.fromJavaList(List.of(1, 2, 3)))
+        );
+
+        assertTrue(
+                LL.fromJavaList(List.of(1)).isPrefix(LL.fromJavaList(List.of(1, 2, 3)))
+        );
+
+        assertFalse(
+                LL.fromJavaList(List.of(1)).isPrefix(LL.fromJavaList(List.of()))
+        );
+    }
+
+    @Test
+    public void appendTest() {
+        assertEquals(
+                LL.fromJavaList(List.of(1)),
+                LL.fromJavaList(List.of()).append(1)
+        );
+
+        assertEquals(
+                LL.fromJavaList(List.of(1, 2)),
+                LL.fromJavaList(List.of()).append(1).append(2)
+        );
+
+        assertEquals(
+                LL.fromJavaList(List.of(1, 2, 3)),
+                LL.fromJavaList(List.of()).append(1).append(2).append(3)
+        );
+    }
 }
