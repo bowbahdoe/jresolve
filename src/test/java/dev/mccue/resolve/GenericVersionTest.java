@@ -429,4 +429,18 @@ public class GenericVersionTest extends AbstractVersionTest {
                 "f95e94f7-2443-4b2f-a10d-059d8d224dd9",
                 "b558af80-78bc-43c7-b916-d635a23cc4b5");
     }
+
+    @Test
+    public void testFromGeolkyt() {
+        assertOrder(X_GT_Y, "1.0.0.10.2", "1.0.0.9.3");  // Our sources seem to disagree there. However maven's internal utilities say that this is the right way - so this is how it is
+        assertOrder(X_GT_Y, "3.3.0-I20070605-0010", "3.3.0");
+        assertOrder(X_EQ_Y, "1-1.foo-bar1baz-.1", "1-1.foo-bar-1-baz-0.1");
+        assertOrder(X_EQ_Y, "1-1.foo-bar-1-baz-0.1", "1-1.foo-bar1baz-.1");
+        assertOrder(X_EQ_Y, "1.0-rc", "1.0-cr");
+        assertOrder(X_EQ_Y, "1.0-cr", "1.0-rc");
+        assertOrder(X_EQ_Y, "1.0-ga", "1.0.ga");
+        assertOrder(X_EQ_Y, "1.0.ga", "1.0-ga");
+        assertOrder(X_LT_Y, "1.0-alpha", "1.0.aaa");
+        assertOrder(X_GT_Y, "1.0.aaa", "1.0-alpha");
+    }
 }

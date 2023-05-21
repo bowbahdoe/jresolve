@@ -8,10 +8,10 @@ import java.util.stream.Collectors;
 
 
 final class VersionMap {
-    private final HashMap<Library, Entry> value;
+    private final LinkedHashMap<Library, Entry> value;
 
     public VersionMap() {
-        this.value = new HashMap<>();
+        this.value = new LinkedHashMap<>();
     }
 
     public record Entry(
@@ -87,6 +87,19 @@ final class VersionMap {
                         Map.Entry::getKey,
                         entry -> entry.getValue().currentSelection
                 ));
+    }
+
+    public List<Dependency> selectedDependencies() {
+        return value.entrySet()
+                .stream()
+                .filter(entry -> entry.getValue().currentSelection != null)
+                .map(entry -> new Dependency(
+                        entry.getKey(),
+                        entry.getValue().versions.get(
+                                entry.getValue().currentSelection
+                        ))
+                )
+                .toList();
     }
 
     public Optional<List<LL<DependencyId>>> selectedPaths(Library library) {

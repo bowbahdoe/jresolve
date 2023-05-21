@@ -17,4 +17,9 @@ final class LibraryNotFound extends RuntimeException {
         this.library = library;
         this.version = version;
     }
+
+    @Override
+    public String getMessage() {
+        return "LibraryNotFound[library=" + library + ", version=" + version + "]";
+    }
 }

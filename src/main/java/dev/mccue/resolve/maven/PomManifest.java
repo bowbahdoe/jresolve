@@ -37,6 +37,10 @@ record PomManifest(
                 continue;
             }
 
+            if (dependency.optional().orElse("false").equals("true")) {
+                continue;
+            }
+
             var managed = dependencyManagement.get(ManagedDependencyKey.from(dependency));
 
             var version = dependency.version();

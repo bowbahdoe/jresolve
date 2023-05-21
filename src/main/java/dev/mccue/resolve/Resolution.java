@@ -4,10 +4,7 @@ import dev.mccue.resolve.maven.MavenCoordinate;
 import dev.mccue.resolve.util.LL;
 
 import java.nio.file.Path;
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -95,14 +92,15 @@ public record Resolution(
             );
 
             if (decision.included()) {
-                Manifest manifest = () -> coordinate.getManifest(library, cache)
+                var coordinateManifest = coordinate.getManifest(library, cache);
+                var afterExclusions = coordinateManifest
                         .dependencies()
                         .stream()
                         .filter(dep -> exclusions.shouldInclude(dep.library()))
                         .map(dep -> dep.withExclusions(dep.exclusions().join(exclusions)))
                         .toList();
 
-                for (var manifestDep : manifest.dependencies()) {
+                for (var manifestDep : afterExclusions) {
                     q.add(new QueueEntry(
                             manifestDep,
                             queueEntry.path.prepend(new DependencyId(queueEntry.dependency))
@@ -116,5 +114,9 @@ public record Resolution(
                 versionMap,
                 null
         );
+    }
+
+    public List<Dependency> selectedDependencies() {
+        return versionMap.selectedDependencies();
     }
 }

@@ -13,6 +13,11 @@ sealed interface PomOptionality {
         }
 
         @Override
+        public String orElse(String defaultValue) {
+            return defaultValue;
+        }
+
+        @Override
         public String toString() {
             return "Undeclared[]";
         }
@@ -27,7 +32,14 @@ sealed interface PomOptionality {
         public PomOptionality map(Function<String, String> f) {
             return new Declared(f.apply(value));
         }
+
+        @Override
+        public String orElse(String defaultValue) {
+            return value;
+        }
     }
 
     PomOptionality map(Function<String, String> f);
+
+    String orElse(String defaultValue);
 }

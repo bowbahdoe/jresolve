@@ -92,7 +92,7 @@ public record MavenCoordinate(
     public Manifest getManifest(Library library, Cache cache) {
         for (var repository : repositories) {
             try {
-                repository.getManifest(library, version, cache);
+                return repository.getManifest(library, version, cache, scopes);
             } catch (LibraryNotFound ignored) {
             }
         }

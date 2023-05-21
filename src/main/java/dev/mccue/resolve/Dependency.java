@@ -20,7 +20,7 @@ public record Dependency(
         this(library, coordinate, Exclusions.NONE);
     }
 
-    private static Dependency maven(String coordinate, MavenRepository repository) {
+    public static Dependency maven(String coordinate, MavenRepository repository) {
         var parts = coordinate.split(":");
         if (parts.length != 3 || parts[0].isBlank() || parts[1].isBlank() || parts[2].isBlank()) {
             throw new IllegalArgumentException(coordinate + " does not fit the group:artifact:version format");

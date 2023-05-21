@@ -8,6 +8,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -205,7 +206,7 @@ public sealed abstract class MavenRepository
     }
 
     final PomManifest getManifest(Library library, Version version, Cache cache) {
-        return getManifest(library, version, cache, List.of());
+        return getManifest(library, version, cache, List.of(Scope.COMPILE));
     }
 
     abstract InputStream getFile(

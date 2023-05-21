@@ -8,7 +8,7 @@ public final class Resolve {
     private final LinkedHashMap<Library, Dependency> dependencyOverrides;
 
     private final LinkedHashMap<Library, Dependency> dependencyDefaults;
-    private Cache cache;
+    Cache cache;
 
     public Resolve() {
         this.dependencies = new LinkedHashMap<>();
