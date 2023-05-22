@@ -52,6 +52,29 @@ public sealed abstract class MavenRepository
         return new LocalMavenRepository(path);
     }
 
+    /**
+     * Whether this should be considered a "snapshot" repository.
+     *
+     * <p>
+     *     Snapshot repos are distinguished by their contents not being stable. During resolution
+     *     and fetching, snapshot repos should have relevant artifacts re-downloaded.
+     * </p>
+     *
+     * <p>
+     *     Implementations are allowed to use standard metadata and other such tricks to
+     *     avoid re-downloads.
+     * </p>
+     */
+    final boolean isSnapshot;
+
+    MavenRepository(boolean isSnapshot) {
+        this.isSnapshot = isSnapshot;
+    }
+
+    MavenRepository() {
+        this(false);
+    }
+
     abstract URI getArtifactUri(
             Library library,
             Version version,

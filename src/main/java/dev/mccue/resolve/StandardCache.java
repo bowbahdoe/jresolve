@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 @Gold
-public final class StandardCache implements Cache {
+final class StandardCache implements Cache {
     private final Path root;
 
     public StandardCache(Path root) {
@@ -68,5 +68,10 @@ public final class StandardCache implements Cache {
         }
 
         return filePath;
+    }
+
+    @Override
+    public Path fetch(CacheKey key, Supplier<InputStream> data) {
+        return null;
     }
 }

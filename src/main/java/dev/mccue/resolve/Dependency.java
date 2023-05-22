@@ -3,6 +3,7 @@ package dev.mccue.resolve;
 import dev.mccue.resolve.maven.MavenCoordinate;
 import dev.mccue.resolve.maven.MavenRepository;
 
+import java.util.List;
 import java.util.Objects;
 
 public record Dependency(
@@ -27,6 +28,15 @@ public record Dependency(
         }
 
         return new Dependency(new Library(parts[0], parts[1]), new MavenCoordinate(parts[2], repository));
+    }
+
+    public static Dependency maven(String coordinate, List<MavenRepository> repositories) {
+        var parts = coordinate.split(":");
+        if (parts.length != 3 || parts[0].isBlank() || parts[1].isBlank() || parts[2].isBlank()) {
+            throw new IllegalArgumentException(coordinate + " does not fit the group:artifact:version format");
+        }
+
+        return new Dependency(new Library(parts[0], parts[1]), new MavenCoordinate(parts[2], repositories));
     }
 
     public static Dependency mavenCentral(String coordinate) {

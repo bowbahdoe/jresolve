@@ -18,7 +18,7 @@ public class PomManifestTest {
         var clojureManifest = MAVEN_CENTRAL.getManifest(
                 new Library("org.clojure", "clojure"),
                 new Version("1.11.1"),
-                new StandardCache(Path.of("./libs")),
+                Cache.standard(Path.of("./libs")),
                 List.of(Scope.COMPILE)
         );
 
@@ -42,7 +42,7 @@ public class PomManifestTest {
         var vaadinManifest = MAVEN_CENTRAL.getManifest(
                 new Library("com.vaadin", "vaadin"),
                 new Version("23.3.7"),
-                new StandardCache(Path.of("./libs"))
+                Cache.standard(Path.of("./libs"))
         );
 
 
@@ -51,7 +51,7 @@ public class PomManifestTest {
         var vaadinCompileManifest = MAVEN_CENTRAL.getManifest(
                 new Library("com.vaadin", "vaadin"),
                 new Version("23.3.7"),
-                new StandardCache(tempDir),
+                Cache.standard(tempDir),
                 List.of(Scope.COMPILE)
         );
 

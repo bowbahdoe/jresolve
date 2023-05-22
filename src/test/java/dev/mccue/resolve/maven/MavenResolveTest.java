@@ -18,7 +18,7 @@ public class MavenResolveTest {
 
         var dependencies = new Resolve()
                 .addDependency(jetty)
-                .withCache(new StandardCache(Files.createTempDirectory("junit")))
+                .withCache(Cache.standard(Files.createTempDirectory("junit")))
                 .run()
                 .selectedDependencies();
 
@@ -53,7 +53,7 @@ public class MavenResolveTest {
         var classpath = new Fetch()
                 .addDependency(Dependency.mavenCentral("dev.mccue:json:0.2.3"))
                 .run()
-                .classpath();
+                .path();
 
         System.out.println(classpath);
     }
@@ -69,7 +69,8 @@ public class MavenResolveTest {
 
         System.out.println(fetchResult
                 .libraries()
-                .stream()
+                .values()
+                        .stream()
                 .map(Path::toString)
                 .collect(Collectors.joining("\n"))
         );

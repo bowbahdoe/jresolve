@@ -1,17 +1,22 @@
 package dev.mccue.resolve;
 
-import dev.mccue.resolve.maven.MavenCoordinate;
 import dev.mccue.resolve.util.LL;
 
-import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-public record Resolution(
-        VersionMap versionMap,
-        Trace trace
-) {
+public final class Resolution {
+    private final VersionMap versionMap;
+    private final Trace trace;
+
+    private Resolution(VersionMap versionMap, Trace trace) {
+        this.versionMap = versionMap;
+        this.trace = trace;
+    }
+
+    VersionMap versionMap() {
+        return versionMap;
+    }
+
     static Exclusions updateExclusions(
             Library library,
             InclusionDecision inclusionDecision,
@@ -91,12 +96,23 @@ public record Resolution(
                     dependency.exclusions()
             );
 
+            System.out.println("****");
+            System.out.println(library);
+            System.out.println(decision);
+
+            System.out.println("****");
             if (decision.included()) {
                 var coordinateManifest = coordinate.getManifest(library, cache);
                 var afterExclusions = coordinateManifest
                         .dependencies()
                         .stream()
-                        .filter(dep -> exclusions.shouldInclude(dep.library()))
+                        .filter(dep -> {
+                            System.out.println("EXCLUSIONS: " + exclusions);
+                            System.out.println("DEP: " + dep.library());
+                            System.out.println("DECISION: " + exclusions.shouldInclude(dep.library()));
+                            System.out.println("---");
+                            return exclusions.shouldInclude(dep.library());
+                        })
                         .map(dep -> dep.withExclusions(dep.exclusions().join(exclusions)))
                         .toList();
 

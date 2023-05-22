@@ -15,4 +15,8 @@ public record Exclusion(
         Objects.requireNonNull(group, "group must not be null");
         Objects.requireNonNull(artifact, "artifact must not be null");
     }
+
+    public Exclusion(String group, String artifact) {
+        this(new Group(group), new Artifact(artifact));
+    }
 }

@@ -55,11 +55,19 @@ public record MavenCoordinate(
     }
 
     public MavenCoordinate(String version, MavenRepository repository) {
-        this(new Version(version), repository);
+        this(new Version(version), List.of(repository));
+    }
+
+    public MavenCoordinate(String version, List<MavenRepository> repositories) {
+        this(new Version(version), repositories);
     }
 
     public MavenCoordinate(Version version, MavenRepository repository) {
-        this(version, List.of(repository), List.of());
+        this(version, List.of(repository));
+    }
+
+    public MavenCoordinate(Version version, List<MavenRepository> repositories) {
+        this(version, repositories, List.of());
     }
 
     @Override
@@ -75,7 +83,7 @@ public record MavenCoordinate(
     }
 
     @Override
-    public MavenCoordinateId id() {
+    public CoordinateId id() {
         return new MavenCoordinateId(version);
     }
 

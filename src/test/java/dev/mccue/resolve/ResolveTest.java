@@ -372,6 +372,7 @@ public class ResolveTest {
                 .run()
                 .versionMap();
 
+        vmap.printPrettyString();
         assertEquals(
                 Map.of(
                         fakeLib("A"), new FakeCoordinateId(1),
@@ -416,6 +417,40 @@ public class ResolveTest {
                 new Resolve()
                         .addDependency(z)
                         .addDependency(x)
+                        .run()
+                        .versionMap()
+                        .selectedCoordinateIds()
+        );
+    }
+
+    @Test
+    public void testExclusionsGeolykt() {
+        // Exclusions example problem provided by geolkyt on the rife2 discord
+        var a =  fake("A", 1, List.of(
+                fake("B", 1, List.of(
+                        fake("D", 1, List.of(
+                                fake("G", 1),
+                                fake("F", 1)
+                        ))
+                )),
+                fake("C", 1, List.of(
+                        fake("E", 1, List.of(
+                                fake("G", 1)
+                        ))
+                ), Exclusions.of(new Exclusion(Group.ALL, new Artifact("G"))))
+        ), Exclusions.of(new Exclusion(Group.ALL, new Artifact("F"))));
+
+        assertEquals(
+                Map.of(
+                        fakeLib("A"), new FakeCoordinateId(1),
+                        fakeLib("B"), new FakeCoordinateId(1),
+                        fakeLib("C"), new FakeCoordinateId(1),
+                        fakeLib("D"), new FakeCoordinateId(1),
+                        fakeLib("E"), new FakeCoordinateId(1),
+                        fakeLib("G"), new FakeCoordinateId(1)
+                ),
+                new Resolve()
+                        .addDependency(a)
                         .run()
                         .versionMap()
                         .selectedCoordinateIds()
