@@ -34,7 +34,6 @@ public final class Resolve {
         return this;
     }
 
-
     public Resolve withCache(Cache cache) {
         this.cache = cache;
         return this;

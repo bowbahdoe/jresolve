@@ -42,4 +42,8 @@ sealed interface PomOptionality {
     PomOptionality map(Function<String, String> f);
 
     String orElse(String defaultValue);
+
+    default boolean asBoolean() {
+        return this.orElse("false").equals("true");
+    }
 }

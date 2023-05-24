@@ -7,4 +7,9 @@ record MavenCoordinateId(
         Version version
 )
         implements CoordinateId {
+
+    @Override
+    public String toString() {
+        return version.toString();
+    }
 }

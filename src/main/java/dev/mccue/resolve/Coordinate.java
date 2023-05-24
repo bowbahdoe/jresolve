@@ -15,8 +15,6 @@ import java.util.Optional;
  *     <li>The artifact containing library documentation.</li>
  *     <li>The manifest of required transitive dependencies.</li>
  * </ul>
- *
- * As well as
  */
 @ToolsDeps(
         value = "https://clojure.org/reference/dep_expansion",

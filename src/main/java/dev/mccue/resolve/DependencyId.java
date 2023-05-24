@@ -1,10 +1,11 @@
 package dev.mccue.resolve;
 
-record DependencyId(
+
+public record DependencyId(
         Library library,
         CoordinateId coordinateId
 ) {
-    DependencyId(Dependency dependency) {
+    public DependencyId(Dependency dependency) {
         this(dependency.library(), dependency.coordinate().id());
     }
 }

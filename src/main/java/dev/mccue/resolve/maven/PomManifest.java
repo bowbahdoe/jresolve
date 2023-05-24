@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 record PomManifest(
         @Override List<Dependency> dependencies
@@ -23,7 +24,7 @@ record PomManifest(
     public static PomManifest from(
             EffectivePomInfo effectivePomInfo,
             List<Scope> scopes,
-            BiFunction<Version, Exclusions, MavenCoordinate> makeCoordinate
+            BiFunction<Version, Classifier, MavenCoordinate> makeCoordinate
     ) {
         var dependencies = new ArrayList<Dependency>();
 
@@ -37,7 +38,7 @@ record PomManifest(
                 continue;
             }
 
-            if (dependency.optional().orElse("false").equals("true")) {
+            if (dependency.optional().asBoolean()) {
                 continue;
             }
 
@@ -77,25 +78,27 @@ record PomManifest(
                     new Dependency(
                             new Library(
                                     new Group(declaredGroup.value()),
-                                    new Artifact(declaredArtifact.value())
+                                    new Artifact(declaredArtifact.value()),
+                                    dependency.classifier().orElse(Classifier.EMPTY).asVariant()
                             ),
                             makeCoordinate.apply(
                                     new Version(declaredVersion.value()),
-                                    Exclusions.of(exclusions.stream()
-                                            .map(pomExclusion -> {
-                                                if (!(pomExclusion.groupId() instanceof PomGroupId.Declared declaredExclusionGroup)) {
-                                                    throw new RuntimeException("Exclusion group id not declared");
-                                                }
-                                                if (!(pomExclusion.artifactId() instanceof PomArtifactId.Declared declaredExclusionArtifact)) {
-                                                    throw new RuntimeException("Exclusion group id not declared");
-                                                }
-                                                return new Exclusion(
-                                                        new Group(declaredExclusionGroup.value()),
-                                                        new Artifact(declaredExclusionArtifact.value())
-                                                );
-                                            })
-                                            .toList())
-                            )
+                                    dependency.classifier().orElse(Classifier.EMPTY)
+                            ),
+                            Exclusions.of(exclusions.stream()
+                                    .map(pomExclusion -> {
+                                        if (!(pomExclusion.groupId() instanceof PomGroupId.Declared declaredExclusionGroup)) {
+                                            throw new RuntimeException("Exclusion group id not declared");
+                                        }
+                                        if (!(pomExclusion.artifactId() instanceof PomArtifactId.Declared declaredExclusionArtifact)) {
+                                            throw new RuntimeException("Exclusion group id not declared");
+                                        }
+                                        return new Exclusion(
+                                                new Group(declaredExclusionGroup.value()),
+                                                new Artifact(declaredExclusionArtifact.value())
+                                        );
+                                    })
+                                    .toList())
                     )
             );
         }

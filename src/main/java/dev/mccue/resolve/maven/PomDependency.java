@@ -1,5 +1,8 @@
 package dev.mccue.resolve.maven;
 
+import dev.mccue.resolve.Library;
+import dev.mccue.resolve.Variant;
+
 import java.util.Set;
 
 record PomDependency(
@@ -13,7 +16,7 @@ record PomDependency(
         PomScope scope
 ) {
 
-    public PomDependency(
+    PomDependency(
             PomGroupId groupId,
             PomArtifactId artifactId,
             PomVersion version
@@ -27,6 +30,14 @@ record PomDependency(
                 PomClassifier.Undeclared.INSTANCE,
                 PomOptionality.Undeclared.INSTANCE,
                 PomScope.Undeclared.INSTANCE
+        );
+    }
+
+    Library asLibraryOrThrow() {
+        return new Library(
+                this.groupId.orElseThrow(),
+                this.artifactId().orElseThrow(),
+                new Variant(this.classifier.orElse(Classifier.EMPTY).value())
         );
     }
 }

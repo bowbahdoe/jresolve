@@ -22,12 +22,7 @@ public record Dependency(
     }
 
     public static Dependency maven(String coordinate, MavenRepository repository) {
-        var parts = coordinate.split(":");
-        if (parts.length != 3 || parts[0].isBlank() || parts[1].isBlank() || parts[2].isBlank()) {
-            throw new IllegalArgumentException(coordinate + " does not fit the group:artifact:version format");
-        }
-
-        return new Dependency(new Library(parts[0], parts[1]), new MavenCoordinate(parts[2], repository));
+        return maven(coordinate, List.of(repository));
     }
 
     public static Dependency maven(String coordinate, List<MavenRepository> repositories) {

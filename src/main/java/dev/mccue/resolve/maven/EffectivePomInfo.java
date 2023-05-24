@@ -113,33 +113,14 @@ record EffectivePomInfo(
     }
 
     EffectivePomInfo resolveImports(MavenRepository repository, Cache cache) {
-        var dependencies = this.dependencies.stream()
+        var dependencyManagementWithImportsFlattened = this.dependencyManagement.stream()
                 .mapMulti((PomDependency dependency, Consumer<PomDependency> addDep) -> {
                     if (!dependency.scope().orElse(Scope.COMPILE).equals(Scope.IMPORT)) {
                         addDep.accept(dependency);
                     }
                     else {
                         EffectivePomInfo.from(repository.getAllPoms(
-                                new Library(
-                                        dependency.groupId().orElseThrow(), dependency.artifactId().orElseThrow()),
-                                        dependency.version().orElseThrow(),
-                                        cache
-                                ))
-                                .resolveImports(repository, cache)
-                                .dependencies
-                                .forEach(addDep);
-                    }
-                })
-                .toList();
-        var dependencyManagement = this.dependencyManagement.stream()
-                .mapMulti((PomDependency dependency, Consumer<PomDependency> addDep) -> {
-                    if (!dependency.scope().orElse(Scope.COMPILE).equals(Scope.IMPORT)) {
-                        addDep.accept(dependency);
-                    }
-                    else {
-                        EffectivePomInfo.from(repository.getAllPoms(
-                                new Library(
-                                        dependency.groupId().orElseThrow(), dependency.artifactId().orElseThrow()),
+                                        dependency.asLibraryOrThrow(),
                                         dependency.version().orElseThrow(),
                                         cache
                                 ))
@@ -149,7 +130,14 @@ record EffectivePomInfo(
                     }
                 })
                 .toList();
-        return new EffectivePomInfo(groupId, artifactId, version, dependencies, dependencyManagement, packaging);
+        return new EffectivePomInfo(
+                groupId,
+                artifactId,
+                version,
+                dependencies,
+                dependencyManagementWithImportsFlattened,
+                packaging
+        );
     }
     /*
     This is because the minimal set of information for matching a dependency reference against a dependencyManagement section is actually {groupId, artifactId, type, classifier}.

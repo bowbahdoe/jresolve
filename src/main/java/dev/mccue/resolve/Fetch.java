@@ -31,7 +31,6 @@ public final class Fetch {
         return this;
     }
 
-
     public Fetch withCache(Cache cache) {
         this.resolve.withCache(cache);
         return this;

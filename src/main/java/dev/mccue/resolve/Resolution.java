@@ -2,6 +2,8 @@ package dev.mccue.resolve;
 
 import dev.mccue.resolve.util.LL;
 
+import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.*;
 
 public final class Resolution {
@@ -96,23 +98,12 @@ public final class Resolution {
                     dependency.exclusions()
             );
 
-            System.out.println("****");
-            System.out.println(library);
-            System.out.println(decision);
-
-            System.out.println("****");
             if (decision.included()) {
                 var coordinateManifest = coordinate.getManifest(library, cache);
                 var afterExclusions = coordinateManifest
                         .dependencies()
                         .stream()
-                        .filter(dep -> {
-                            System.out.println("EXCLUSIONS: " + exclusions);
-                            System.out.println("DEP: " + dep.library());
-                            System.out.println("DECISION: " + exclusions.shouldInclude(dep.library()));
-                            System.out.println("---");
-                            return exclusions.shouldInclude(dep.library());
-                        })
+                        .filter(dep -> exclusions.shouldInclude(dep.library()))
                         .map(dep -> dep.withExclusions(dep.exclusions().join(exclusions)))
                         .toList();
 
@@ -134,5 +125,30 @@ public final class Resolution {
 
     public List<Dependency> selectedDependencies() {
         return versionMap.selectedDependencies();
+    }
+
+    public void printTree(PrintStream out) {
+        int depth = 0;
+        for (var entry : trace) {
+
+            if (depth != 0) {
+                System.out.print("  ".repeat(depth));
+                System.out.print(". ");
+            }
+            System.out.print(entry.library().group().value());
+            System.out.print("/");
+            System.out.print(entry.library().artifact().value());
+            System.out.print(entry.coordinateId());
+            if (!entry.inclusionDecision().included()) {
+                System.out.print(" " + entry.inclusionDecision());
+            }
+            depth++;
+            System.out.println();
+        }
+        out.println("");
+    }
+
+    public void printTree() {
+        printTree(System.out);
     }
 }

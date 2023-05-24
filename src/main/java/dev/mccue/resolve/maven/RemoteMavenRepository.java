@@ -93,6 +93,14 @@ final class RemoteMavenRepository extends MavenRepository {
                     requestBuilder.build(),
                     HttpResponse.BodyHandlers.ofInputStream()
             );
+            System.out.println(library + " ---- " + response.statusCode());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                if (response.statusCode() == 404) {
+                    throw new LibraryNotFound(library, version);
+                }
+                System.out.println(response.statusCode());
+                throw new RuntimeException();
+            }
             return response.body();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -115,6 +123,7 @@ final class RemoteMavenRepository extends MavenRepository {
                     requestBuilder.build(),
                     HttpResponse.BodyHandlers.ofInputStream()
             );
+
             return response.body();
         } catch (IOException e) {
             throw new UncheckedIOException(e);

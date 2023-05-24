@@ -15,18 +15,18 @@ final class VersionMap {
     }
 
     public record Entry(
-            HashMap<CoordinateId, Coordinate> versions,
-            HashMap<CoordinateId, HashSet<LL<DependencyId>>> paths,
+            LinkedHashMap<CoordinateId, Coordinate> versions,
+            LinkedHashMap<CoordinateId, HashSet<LL<DependencyId>>> paths,
             CoordinateId currentSelection,
             boolean topDep
     ) {
         public Entry() {
-            this(new HashMap<>(), new HashMap<>(), null, false);
+            this(new LinkedHashMap<>(), new LinkedHashMap<>(), null, false);
         }
 
         public Entry(
-                HashMap<CoordinateId, Coordinate> versions,
-                HashMap<CoordinateId, HashSet<LL<DependencyId>>> paths
+                LinkedHashMap<CoordinateId, Coordinate> versions,
+                LinkedHashMap<CoordinateId, HashSet<LL<DependencyId>>> paths
         ) {
             this(versions, paths, null, false);
         }

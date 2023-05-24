@@ -8,7 +8,6 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -145,9 +144,10 @@ public sealed abstract class MavenRepository
         return URI.create(result.toString());
     }
 
+    abstract CacheKey cacheKey(Library library, Version version, Classifier classifier, Extension extension);
+
     final PomInfo getPomInfo(Library library, Version version, Cache cache) throws LibraryNotFound {
-        var uri = getArtifactUri(library, version, Classifier.EMPTY, Extension.POM);
-        var key = MavenCoordinate.artifactKey(uri);
+        var key = cacheKey(library, version, Classifier.EMPTY, Extension.POM);
         var pomPath = cache.fetchIfAbsent(key, () ->
                 getFile(library, version, Classifier.EMPTY, Extension.POM)
         );
@@ -219,17 +219,39 @@ public sealed abstract class MavenRepository
         return childHavingPomInfo;
     }
 
-    final PomManifest getManifest(Library library, Version version, Cache cache, List<Scope> scopes) {
+    final PomManifest getManifest(
+            Library library,
+            Version version,
+            Cache cache,
+            List<Scope> scopes,
+            List<MavenRepository> childRepositories
+    ) {
         var effectivePom = EffectivePomInfo.from(getAllPoms(library, version, cache));
         return PomManifest.from(
-                effectivePom,
+                effectivePom.resolveImports(this, cache),
                 scopes,
-                (depVersion, depExclusions) -> new MavenCoordinate(depVersion, this)
+                (depVersion, defaultClassifier) -> new MavenCoordinate(
+                        depVersion,
+                        childRepositories,
+                        scopes,
+                        defaultClassifier,
+                        Classifier.SOURCES,
+                        Classifier.JAVADOC
+                )
         ).normalize(cache);
     }
 
-    final PomManifest getManifest(Library library, Version version, Cache cache) {
-        return getManifest(library, version, cache, List.of(Scope.COMPILE));
+    final PomManifest getManifest(Library library,
+                                  Version version,
+                                  Cache cache,
+                                  List<MavenRepository> childRepositories) {
+        return getManifest(library, version, cache, List.of(Scope.COMPILE), childRepositories);
+    }
+
+    final PomManifest getManifest(Library library,
+                                  Version version,
+                                  Cache cache) {
+        return getManifest(library, version, cache, List.of(Scope.COMPILE), List.of(this));
     }
 
     abstract InputStream getFile(

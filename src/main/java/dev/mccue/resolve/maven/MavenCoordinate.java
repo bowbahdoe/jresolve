@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import java.lang.System.Logger.Level;
+
 public record MavenCoordinate(
         Version version,
         List<MavenRepository> repositories,
@@ -20,6 +22,7 @@ public record MavenCoordinate(
         Classifier sourceClassifier,
         Classifier documentationClassifier
 ) implements Coordinate {
+    private static final System.Logger LOG = System.getLogger(MavenCoordinate.class.getName());
 
     public MavenCoordinate(
             Version version,
@@ -87,20 +90,11 @@ public record MavenCoordinate(
         return new MavenCoordinateId(version);
     }
 
-    CacheKey artifactKey(MavenRepository repository, Library library, Classifier classifier, Extension extension) {
-        var uri = repository.getArtifactUri(library, version, classifier, extension);
-        return artifactKey(uri);
-    }
-
-    static CacheKey artifactKey(URI artifactUri) {
-        return new CacheKey(artifactUri.toASCIIString().split("((:)*/)+"));
-    }
-
     @Override
     public Manifest getManifest(Library library, Cache cache) {
         for (var repository : repositories) {
             try {
-                return repository.getManifest(library, version, cache, scopes);
+                return repository.getManifest(library, version, cache, scopes, repositories);
             } catch (LibraryNotFound ignored) {
             }
         }
@@ -112,16 +106,34 @@ public record MavenCoordinate(
     public Path getLibraryLocation(Library library, Cache cache) {
         for (var repository : repositories) {
             try {
-                var key = artifactKey(repository, library, Classifier.EMPTY, Extension.JAR);
+                var key = repository.cacheKey(library, version, classifier, Extension.JAR);
                 return cache.fetchIfAbsent(key, () -> repository.getFile(
                         library,
                         version,
                         classifier,
                         Extension.JAR
                 ));
-            } catch (LibraryNotFound ignored) {
+            } catch (LibraryNotFound e) {
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Could not find artifact in repository. repository=" + repository
+                                + ", library=" + library
+                                + ", version=" + version
+                                + ", classifier=" + classifier
+                                + ", cache=" + cache,
+                        e
+                );
             }
         }
+
+        LOG.log(
+                Level.TRACE,
+                () -> "Could not find artifact in any checked repository. repositories=" + repositories
+                        + ", library=" + library
+                        + ", version=" + version
+                        + ", classifier=" + classifier
+                        + ", cache=" + cache
+        );
 
         throw new LibraryNotFound(library, version);
     }
@@ -130,16 +142,35 @@ public record MavenCoordinate(
     public Optional<Path> getLibrarySourcesLocation(Library library, Cache cache) {
         for (var repository : repositories) {
             try {
-                var key = artifactKey(repository, library, Classifier.SOURCES, Extension.JAR);
+                var key = repository.cacheKey(library, version, sourceClassifier, Extension.JAR);
                 return Optional.of(cache.fetchIfAbsent(key, () -> repository.getFile(
                         library,
                         version,
                         sourceClassifier,
                         Extension.JAR
                 )));
-            } catch (LibraryNotFound ignored) {
+            } catch (LibraryNotFound e) {
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Could not find sources in repository. repository=" + repository
+                                + ", library=" + library
+                                + ", version=" + version
+                                + ", sourceClassifier=" + sourceClassifier
+                                + ", cache=" + cache,
+                        e
+                );
             }
         }
+
+        LOG.log(
+                Level.TRACE,
+                () -> "Could not find sources in any checked repository. repositories=" + repositories
+                        + ", library=" + library
+                        + ", version=" + version
+                        + ", sourceClassifier=" + sourceClassifier
+                        + ", cache=" + cache
+        );
+
         return Optional.empty();
     }
 
@@ -147,16 +178,35 @@ public record MavenCoordinate(
     public Optional<Path> getLibraryDocumentationLocation(Library library, Cache cache) {
         for (var repository : repositories) {
             try {
-                var key = artifactKey(repository, library, Classifier.JAVADOC, Extension.JAR);
+                var key = repository.cacheKey(library, version, documentationClassifier, Extension.JAR);
                 return Optional.of(cache.fetchIfAbsent(key, () -> repository.getFile(
                         library,
                         version,
                         documentationClassifier,
                         Extension.JAR
                 )));
-            } catch (LibraryNotFound ignored) {
+            } catch (LibraryNotFound e) {
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Could not find documentation in repository. repository=" + repository
+                                + ", library=" + library
+                                + ", version=" + version
+                                + ", documentationClassifier=" + documentationClassifier
+                                + ", cache=" + cache,
+                        e
+                );
             }
         }
+
+        LOG.log(
+                Level.TRACE,
+                () -> "Could not find documentation in any checked repository. repositories=" + repositories
+                        + ", library=" + library
+                        + ", version=" + version
+                        + ", documentationClassifier=" + documentationClassifier
+                        + ", cache=" + cache
+        );
+
         return Optional.empty();
     }
 }

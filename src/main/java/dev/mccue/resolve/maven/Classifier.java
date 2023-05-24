@@ -1,5 +1,6 @@
 package dev.mccue.resolve.maven;
 
+import dev.mccue.resolve.Variant;
 import dev.mccue.resolve.doc.Coursier;
 
 import java.util.Objects;
@@ -23,6 +24,10 @@ public record Classifier(String value) implements Comparable<Classifier> {
 
     public Classifier map(Function<String, String> f) {
         return new Classifier(f.apply(value));
+    }
+
+    public Variant asVariant() {
+        return this == EMPTY ? Variant.DEFAULT : new Variant(value);
     }
 
     @Override

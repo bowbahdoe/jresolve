@@ -5,12 +5,7 @@ import java.util.List;
 
 public final class Trace extends ArrayList<Trace.Entry> {
 
-    sealed interface Entry {}
-
-    record StartResolution() implements Entry {}
-    record FinishResolution() implements Entry {}
-
-    record Entry_(
+    record Entry(
             List<DependencyId> path,
             Library library,
             Coordinate coordinate,
