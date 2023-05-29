@@ -7,42 +7,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Fetch {
-    private final Resolve resolve;
+    private final Supplier<Resolution> resolutionSupplier;
+    private Cache cache;
     private boolean includeSources;
     private boolean includeDocumentation;
 
-    public Fetch() {
-        this.resolve = new Resolve();
+    public Fetch(Resolve resolve) {
+        this.resolutionSupplier = resolve::run;
+        this.cache = resolve.cache;
         this.includeSources = false;
         this.includeDocumentation = false;
     }
 
-    public Fetch addDependency(Dependency dependency) {
-        this.resolve.addDependency(dependency);
-        return this;
-    }
-
-    public Fetch addDependencies(List<Dependency> dependencies) {
-        this.resolve.addDependencies(dependencies);
-        return this;
+    public Fetch(Resolution resolution) {
+        this.resolutionSupplier = () -> resolution;
+        this.cache = Cache.standard();
+        this.includeSources = false;
+        this.includeDocumentation = false;
     }
 
     public Fetch withCache(Cache cache) {
-        this.resolve.withCache(cache);
-        return this;
-    }
-
-    public Fetch addDependencyOverride(Dependency dependency) {
-        this.resolve.addDependencyOverride(dependency);
-        return this;
-    }
-
-    public Fetch addDependencyOverrides(List<Dependency> dependencies) {
-        this.resolve.addDependencyOverrides(dependencies);
+        this.cache = cache;
         return this;
     }
 
@@ -66,12 +56,12 @@ public final class Fetch {
     }
 
     public Result run() {
-        var selectedDependencies = this.resolve.run().selectedDependencies();
+        var selectedDependencies = resolutionSupplier.get().selectedDependencies();
         Map<Library, Path> libraries = selectedDependencies
                 .stream()
                 .collect(Collectors.toUnmodifiableMap(
                         Dependency::library,
-                        dependency -> dependency.coordinate().getLibraryLocation(dependency.library(), resolve.cache)
+                        dependency -> dependency.coordinate().getLibraryLocation(dependency.library(), this.cache)
                 ));
 
         Map<Library, Path> sources = this.includeSources
@@ -79,7 +69,7 @@ public final class Fetch {
                 .<Map.Entry<Library, Path>>mapMulti((dependency, consumer) ->
                         dependency
                                 .coordinate()
-                                .getLibrarySourcesLocation(dependency.library(), resolve.cache)
+                                .getLibrarySourcesLocation(dependency.library(), this.cache)
                                 .ifPresent(path -> consumer.accept(Map.entry(dependency.library(), path)))
                 )
                         .collect(Collectors.toUnmodifiableMap(
@@ -93,7 +83,7 @@ public final class Fetch {
                 .<Map.Entry<Library, Path>>mapMulti((dependency, consumer) ->
                         dependency
                                 .coordinate()
-                                .getLibraryDocumentationLocation(dependency.library(), resolve.cache)
+                                .getLibraryDocumentationLocation(dependency.library(), this.cache)
                                 .ifPresent(path -> consumer.accept(Map.entry(dependency.library(), path)))
                 )
                 .collect(Collectors.toUnmodifiableMap(

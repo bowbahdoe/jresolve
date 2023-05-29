@@ -5,7 +5,10 @@
         </encoder>
     </appender>
 
-    <logger name="dev.mccue.resolve.maven.RemoteMavenRepository" level="TRACE"/>
+    <logger name="dev.mccue.resolve.maven.MavenCoordinate" level="TRACE"/>
+
+    <logger name="dev.mccue.resolve.maven.MavenRepository" level="TRACE"/>
+    <logger name="dev.mccue.resolve.maven.HttpTransport" level="TRACE"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />

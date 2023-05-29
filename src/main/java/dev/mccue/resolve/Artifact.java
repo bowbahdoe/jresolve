@@ -17,7 +17,7 @@ public record Artifact(String value) implements Comparable<Artifact> {
         Objects.requireNonNull(value, "value must not be null");
     }
 
-    public Artifact map(Function<String, String> f) {
+    Artifact map(Function<String, String> f) {
         return new Artifact(f.apply(this.value));
     }
 

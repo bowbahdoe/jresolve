@@ -151,9 +151,9 @@ public final class MavenRepository {
 
         path.add(
                 library.artifact()
-                        + (!classifier.equals(Classifier.EMPTY) ? ("-" + classifier.value()) : "")
                         + "-"
                         + version
+                        + (!classifier.equals(Classifier.EMPTY) ? ("-" + classifier.value()) : "")
                         + ((!extension.equals(Extension.EMPTY)) ? "." + extension : "")
         );
 
@@ -265,20 +265,6 @@ public final class MavenRepository {
                 )
         ).normalize(cache);
     }
-
-    PomManifest getManifest(Library library,
-                                  Version version,
-                                  Cache cache,
-                                  List<MavenRepository> childRepositories) {
-        return getManifest(library, version, cache, List.of(Scope.COMPILE), childRepositories);
-    }
-
-    PomManifest getManifest(Library library,
-                                  Version version,
-                                  Cache cache) {
-        return getManifest(library, version, cache, List.of(Scope.COMPILE), List.of(this));
-    }
-
 
     MavenMetadata getMavenMetadata(Library library) throws IOException {
         return MavenMetadata.parseXml(new String(getMetadata(library).readAllBytes(), StandardCharsets.UTF_8));

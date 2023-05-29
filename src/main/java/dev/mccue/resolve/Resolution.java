@@ -216,4 +216,8 @@ public final class Resolution {
     public void printTree(List<Library> hideLibraries) {
         printTree(System.out, hideLibraries);
     }
+
+    public Fetch fetch() {
+        return new Fetch(this);
+    }
 }

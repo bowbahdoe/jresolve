@@ -9,6 +9,19 @@ import java.util.Optional;
 
 import java.lang.System.Logger.Level;
 
+/**
+ *
+ * @param version
+ * @param repositories
+ * @param scopes
+ * @param classifier The classifier under which the runtime artifact for the library will be found.
+ * @param sourceClassifier
+ * @param documentationClassifier
+ * @param jdkVersion The JDK version to use when determining active profiles for POM files.
+ *                   This defaults to the version provided by {@code System.getProperty("java.version")}
+ * @param os Information about the current OS to use for determining active profiles for POM files.
+ *           Can be overridden
+ */
 public record MavenCoordinate(
         Version version,
         List<MavenRepository> repositories,

@@ -46,4 +46,8 @@ public final class Resolve {
                 cache
         );
     }
+
+    public Fetch fetch() {
+        return new Fetch(this);
+    }
 }
