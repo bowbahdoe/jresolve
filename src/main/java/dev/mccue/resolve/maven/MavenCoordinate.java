@@ -3,7 +3,6 @@ package dev.mccue.resolve.maven;
 import dev.mccue.resolve.*;
 import dev.mccue.resolve.doc.ToolsDeps;
 
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +19,9 @@ public record MavenCoordinate(
         )
         Classifier classifier,
         Classifier sourceClassifier,
-        Classifier documentationClassifier
+        Classifier documentationClassifier,
+        Runtime.Version jdkVersion,
+        Os os
 ) implements Coordinate {
     private static final System.Logger LOG = System.getLogger(MavenCoordinate.class.getName());
 
@@ -30,7 +31,9 @@ public record MavenCoordinate(
             List<Scope> scopes,
             Classifier classifier,
             Classifier sourceClassifier,
-            Classifier documentationClassifier
+            Classifier documentationClassifier,
+            Runtime.Version jdkVersion,
+            Os os
     ) {
         this.version = version;
         this.repositories = List.copyOf(repositories);
@@ -43,6 +46,28 @@ public record MavenCoordinate(
         this.classifier = classifier;
         this.sourceClassifier = sourceClassifier;
         this.documentationClassifier = documentationClassifier;
+        this.jdkVersion = jdkVersion;
+        this.os = os;
+    }
+
+    public MavenCoordinate(
+            Version version,
+            List<MavenRepository> repositories,
+            List<Scope> scopes,
+            Classifier classifier,
+            Classifier sourceClassifier,
+            Classifier documentationClassifier
+    ) {
+        this(
+                version,
+                repositories,
+                scopes,
+                classifier,
+                sourceClassifier,
+                documentationClassifier,
+                Runtime.Version.parse(System.getProperty("java.version")),
+                new Os()
+        );
     }
 
     public MavenCoordinate(
@@ -50,11 +75,18 @@ public record MavenCoordinate(
             List<MavenRepository> repositories,
             List<Scope> scopes
     ) {
-        this(version, repositories, scopes, Classifier.EMPTY, Classifier.SOURCES, Classifier.JAVADOC);
+        this(
+                version,
+                repositories,
+                scopes,
+                Classifier.EMPTY,
+                Classifier.SOURCES,
+                Classifier.JAVADOC
+        );
     }
 
     public MavenCoordinate(String version) {
-        this(version, RemoteMavenRepository.MAVEN_CENTRAL);
+        this(version, MavenRepository.MAVEN_CENTRAL);
     }
 
     public MavenCoordinate(String version, MavenRepository repository) {
@@ -107,7 +139,7 @@ public record MavenCoordinate(
         for (var repository : repositories) {
             try {
                 var key = repository.cacheKey(library, version, classifier, Extension.JAR);
-                return cache.fetchIfAbsent(key, () -> repository.getFile(
+                return cache.fetchIfAbsent(key, () -> repository.getArtifact(
                         library,
                         version,
                         classifier,
@@ -143,7 +175,7 @@ public record MavenCoordinate(
         for (var repository : repositories) {
             try {
                 var key = repository.cacheKey(library, version, sourceClassifier, Extension.JAR);
-                return Optional.of(cache.fetchIfAbsent(key, () -> repository.getFile(
+                return Optional.of(cache.fetchIfAbsent(key, () -> repository.getArtifact(
                         library,
                         version,
                         sourceClassifier,
@@ -179,7 +211,7 @@ public record MavenCoordinate(
         for (var repository : repositories) {
             try {
                 var key = repository.cacheKey(library, version, documentationClassifier, Extension.JAR);
-                return Optional.of(cache.fetchIfAbsent(key, () -> repository.getFile(
+                return Optional.of(cache.fetchIfAbsent(key, () -> repository.getArtifact(
                         library,
                         version,
                         documentationClassifier,

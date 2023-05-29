@@ -5,34 +5,33 @@ import dev.mccue.resolve.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public sealed abstract class MavenRepository
-        permits RemoteMavenRepository, LocalMavenRepository {
+public final class MavenRepository {
     public static MavenRepository central() {
-        return RemoteMavenRepository.MAVEN_CENTRAL;
+        return MavenRepository.MAVEN_CENTRAL;
     }
 
     public static MavenRepository remote(String url) {
-        return new RemoteMavenRepository(url);
+        return new MavenRepository(url);
     }
 
     public static MavenRepository remote(String url, Supplier<HttpClient> httpClient) {
-        return new RemoteMavenRepository(url, httpClient);
+        return new MavenRepository(url, httpClient);
     }
 
     public static MavenRepository remote(String url, Consumer<HttpRequest.Builder> enrichRequest) {
-        return new RemoteMavenRepository(url, enrichRequest);
+        return new MavenRepository(url, enrichRequest);
     }
 
     public static MavenRepository remote(
@@ -40,15 +39,15 @@ public sealed abstract class MavenRepository
             Supplier<HttpClient> httpClient,
             Consumer<HttpRequest.Builder> enrichRequest
     ) {
-        return new RemoteMavenRepository(url, httpClient, enrichRequest);
+        return new MavenRepository(url, httpClient, enrichRequest);
     }
 
     public static MavenRepository local() {
-        return new LocalMavenRepository();
+        return new MavenRepository(new FileTransport(Path.of(System.getProperty("user.dir"), ".m2")));
     }
 
     public static MavenRepository local(Path path) {
-        return new LocalMavenRepository(path);
+        return new MavenRepository(new FileTransport(path));
     }
 
     /**
@@ -64,92 +63,118 @@ public sealed abstract class MavenRepository
      *     avoid re-downloads.
      * </p>
      */
+
     final boolean isSnapshot;
 
-    MavenRepository(boolean isSnapshot) {
-        this.isSnapshot = isSnapshot;
+    static final MavenRepository MAVEN_CENTRAL =
+            new MavenRepository("https://repo1.maven.org/maven2/");
+
+    private final Transport transport;
+
+    MavenRepository(String url) {
+        this(url, HttpClient::newHttpClient);
     }
 
-    MavenRepository() {
-        this(false);
+    MavenRepository(String url, Supplier<HttpClient> httpClient) {
+        this(url, httpClient, request -> {});
     }
 
-    abstract URI getArtifactUri(
+    MavenRepository(String url, Consumer<HttpRequest.Builder> enrichRequest) {
+        this(url, HttpClient::newHttpClient, enrichRequest);
+    }
+
+    MavenRepository(
+            String url,
+            Supplier<HttpClient> httpClient,
+            Consumer<HttpRequest.Builder> enrichRequest
+    ) {
+        this.transport = new HttpTransport(url, httpClient, enrichRequest);
+        this.isSnapshot = false;
+    }
+
+    MavenRepository(Transport transport) {
+        this.transport = transport;
+        this.isSnapshot = false;
+    }
+
+
+    CacheKey cacheKey(Library library, Version version, Classifier classifier, Extension extension) {
+        var key = new ArrayList<>(
+                this.transport.cachePrefix()
+        );
+
+        key.addAll(getArtifactPath(library, version, classifier, extension));
+
+        return new CacheKey(key);
+    }
+
+
+    InputStream getArtifact(
             Library library,
             Version version,
             Classifier classifier,
             Extension extension
-    );
+    ) throws LibraryNotFound {
+        return switch (transport.getFile(
+                getArtifactPath(library, version, classifier, extension)
+        )) {
+            case Transport.GetFileResult.Success(InputStream inputStream) -> inputStream;
+            case Transport.GetFileResult.NotFound __ -> throw new LibraryNotFound(library, version);
+            case Transport.GetFileResult.Error(Throwable e) -> throw new RuntimeException(e);
+        };
+    }
 
-    final URI getArtifactUri(
-            StringBuilder result,
+
+    InputStream getMetadata(Library library) {
+        return switch (transport.getFile(
+                getMetadataPath(library)
+        )) {
+            case Transport.GetFileResult.Success(InputStream inputStream) -> inputStream;
+            case Transport.GetFileResult.NotFound __ -> throw new LibraryNotFound(library);
+            case Transport.GetFileResult.Error(Throwable e) -> throw new RuntimeException(e);
+        };
+    }
+
+    static List<String> getArtifactPath(
             Library library,
             Version version,
             Classifier classifier,
             Extension extension
     ) {
 
-        var groupPath = library
-                .group()
-                .toString()
-                .replace(".", "/");
+        var path = new ArrayList<>(Arrays.asList(library.group()
+                .value().split("\\.")));
 
-        result
-                .append(groupPath)
-                .append("/")
-                .append(library.artifact())
-                .append("/")
-                .append(version)
-                .append("/")
-                .append(library.artifact());
+        path.add(library.artifact().value());
 
-        if (!classifier.equals(Classifier.EMPTY)) {
-            result.append("-");
-            result.append(classifier.value());
-        }
+        path.add(version.toString());
 
-        result
-                .append("-")
-                .append(version);
+        path.add(
+                library.artifact()
+                        + (!classifier.equals(Classifier.EMPTY) ? ("-" + classifier.value()) : "")
+                        + "-"
+                        + version
+                        + ((!extension.equals(Extension.EMPTY)) ? "." + extension : "")
+        );
 
-        if (!extension.equals(Extension.EMPTY)) {
-            result.append(".");
-            result.append(extension);
-        }
-
-        return URI.create(result.toString());
+        return List.copyOf(path);
     }
 
-    abstract URI getMetadataUri(
-            Library library
-    );
 
-    final URI getMetadataUri(
-            StringBuilder result,
-            Library library
-    ) {
+    static List<String> getMetadataPath(Library library) {
+        var path = new ArrayList<>(Arrays.asList(library.group()
+                .value().split("\\.")));
 
-        var groupPath = library
-                .group()
-                .toString()
-                .replace(".", "/");
+        path.add(library.artifact().value());
+        path.add("maven-metadata.xml");
 
-        result
-                .append(groupPath)
-                .append("/")
-                .append(library.artifact())
-                .append("/")
-                .append("maven-metadata.xml");
-
-        return URI.create(result.toString());
+        return List.copyOf(path);
     }
-
-    abstract CacheKey cacheKey(Library library, Version version, Classifier classifier, Extension extension);
 
     final PomInfo getPomInfo(Library library, Version version, Cache cache) throws LibraryNotFound {
         var key = cacheKey(library, version, Classifier.EMPTY, Extension.POM);
         var pomPath = cache.fetchIfAbsent(key, () ->
-                getFile(library, version, Classifier.EMPTY, Extension.POM)
+                getArtifact(library, version, Classifier.EMPTY, Extension.POM)
         );
 
         try (var data = Files.newInputStream(pomPath)) {
@@ -159,7 +184,7 @@ public sealed abstract class MavenRepository
         }
     }
 
-    final Optional<PomInfo> getParentPomInfo(PomInfo pomInfo, Cache cache) {
+    Optional<PomInfo> getParentPomInfo(PomInfo pomInfo, Cache cache) {
         if (pomInfo.parent() instanceof PomParent.Declared declaredPom) {
             return Optional.of(
                     getPomInfo(
@@ -177,7 +202,7 @@ public sealed abstract class MavenRepository
         }
     }
 
-    final ChildHavingPomInfo getAllPoms(Library library, Version version, Cache cache) {
+    ChildHavingPomInfo getAllPoms(Library library, Version version, Cache cache) {
         var poms = new ArrayList<PomInfo>();
         var pom = getPomInfo(library, version, cache);
         poms.add(pom);
@@ -219,7 +244,7 @@ public sealed abstract class MavenRepository
         return childHavingPomInfo;
     }
 
-    final PomManifest getManifest(
+    PomManifest getManifest(
             Library library,
             Version version,
             Cache cache,
@@ -241,31 +266,26 @@ public sealed abstract class MavenRepository
         ).normalize(cache);
     }
 
-    final PomManifest getManifest(Library library,
+    PomManifest getManifest(Library library,
                                   Version version,
                                   Cache cache,
                                   List<MavenRepository> childRepositories) {
         return getManifest(library, version, cache, List.of(Scope.COMPILE), childRepositories);
     }
 
-    final PomManifest getManifest(Library library,
+    PomManifest getManifest(Library library,
                                   Version version,
                                   Cache cache) {
         return getManifest(library, version, cache, List.of(Scope.COMPILE), List.of(this));
     }
 
-    abstract InputStream getFile(
-            Library library,
-            Version version,
-            Classifier classifier,
-            Extension extension
-    ) throws LibraryNotFound;
-
-    abstract InputStream getMetadata(
-            Library library
-    );
 
     MavenMetadata getMavenMetadata(Library library) throws IOException {
         return MavenMetadata.parseXml(new String(getMetadata(library).readAllBytes(), StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public String toString() {
+        return "MavenRepository[transport=" + transport + "]";
     }
 }

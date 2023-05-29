@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static dev.mccue.resolve.maven.RemoteMavenRepository.MAVEN_CENTRAL;
+import static dev.mccue.resolve.maven.MavenRepository.MAVEN_CENTRAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PomManifestTest {
@@ -43,7 +43,9 @@ public class PomManifestTest {
         var vaadinManifest = MAVEN_CENTRAL.getManifest(
                 new Library("com.vaadin", "vaadin"),
                 new Version("23.3.7"),
-                Cache.standard(Path.of("./libs"))
+                Cache.standard(tempDir),
+                List.of(),
+                List.of(MAVEN_CENTRAL)
         );
 
 

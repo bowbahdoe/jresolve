@@ -22,7 +22,8 @@ record EffectivePomInfo(
         PomVersion version,
         List<PomDependency> dependencies,
         List<PomDependency> dependencyManagement,
-        PomPackaging packaging
+        PomPackaging packaging,
+        Map<String, String> properties
 ) {
 
     static EffectivePomInfo from(final ChildHavingPomInfo childHavingPomInfo) {
@@ -40,21 +41,7 @@ record EffectivePomInfo(
                 str -> resolveProperties(properties, str);
 
         Function<PomDependency, PomDependency> resolveDep = dependency ->
-                new PomDependency(
-                        dependency.groupId().map(resolve),
-                        dependency.artifactId().map(resolve),
-                        dependency.version().map(resolve),
-                        dependency.exclusions().stream()
-                                .map(exclusion -> new PomExclusion(
-                                        exclusion.groupId().map(resolve),
-                                        exclusion.artifactId().map(resolve)
-                                ))
-                                .collect(Collectors.toUnmodifiableSet()),
-                        dependency.type().map(resolve),
-                        dependency.classifier().map(resolve),
-                        dependency.optional().map(resolve),
-                        dependency.scope().map(resolve)
-                );
+                dependency.map(resolve);
 
         PomGroupId groupId = PomGroupId.Undeclared.INSTANCE;
         PomVersion version = PomVersion.Undeclared.INSTANCE;
@@ -108,25 +95,32 @@ record EffectivePomInfo(
                 version,
                 dependencies.values().stream().toList(),
                 dependencyManagement.values().stream().toList(),
-                packaging
+                packaging,
+                properties
         );
     }
 
     EffectivePomInfo resolveImports(MavenRepository repository, Cache cache) {
+        var props = new LinkedHashMap<>(properties);
         var dependencyManagementWithImportsFlattened = this.dependencyManagement.stream()
                 .mapMulti((PomDependency dependency, Consumer<PomDependency> addDep) -> {
                     if (!dependency.scope().orElse(Scope.COMPILE).equals(Scope.IMPORT)) {
                         addDep.accept(dependency);
                     }
                     else {
-                        EffectivePomInfo.from(repository.getAllPoms(
+                        var effectiveBom = EffectivePomInfo.from(repository.getAllPoms(
                                         dependency.asLibraryOrThrow(),
                                         dependency.version().orElseThrow(),
                                         cache
                                 ))
-                                .resolveImports(repository, cache)
-                                .dependencyManagement
-                                .forEach(addDep);
+                                .resolveImports(repository, cache);
+                        effectiveBom.properties.forEach((k, v) -> {
+                            if (!props.containsKey(k)) {
+                                props.put(k, v);
+                            }
+                        });
+                        props.putAll(effectiveBom.properties);
+                        effectiveBom.dependencyManagement.forEach(addDep);
                     }
                 })
                 .toList();
@@ -134,9 +128,16 @@ record EffectivePomInfo(
                 groupId,
                 artifactId,
                 version,
-                dependencies,
-                dependencyManagementWithImportsFlattened,
-                packaging
+                dependencies
+                        .stream()
+                        .map(dep -> dep.map(s -> resolveProperties(props, s)))
+                        .toList(),
+                dependencyManagementWithImportsFlattened
+                        .stream()
+                        .map(dep -> dep.map(s -> resolveProperties(props, s)))
+                        .toList(),
+                packaging,
+                props
         );
     }
     /*
@@ -164,7 +165,7 @@ record EffectivePomInfo(
     private static final Pattern MAVEN_PROPERTY = Pattern.compile("\\$\\{([^<>{}]+)}");
 
     @Rife("")
-    private static String resolveProperties(Map<String, String> properties, String data) {
+    static String resolveProperties(Map<String, String> properties, String data) {
         if (data == null) {
             return null;
         }

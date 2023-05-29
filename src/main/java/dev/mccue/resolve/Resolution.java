@@ -3,7 +3,6 @@ package dev.mccue.resolve;
 import dev.mccue.resolve.util.LL;
 
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.util.*;
 
 public final class Resolution {
@@ -70,6 +69,7 @@ public final class Resolution {
 
 
         var versionMap = new VersionMap();
+        var trace = new Trace();
 
         while (!q.isEmpty()) {
             var queueEntry = q.poll();
@@ -88,6 +88,13 @@ public final class Resolution {
                     coordinateId,
                     queueEntry.path
             );
+
+            trace.add(new Trace.Entry(
+                    queueEntry.path.reverse().toJavaList(),
+                    dependency.library(),
+                    dependency.coordinate().id(),
+                    decision
+            ));
 
             var exclusions = updateExclusions(
                     library,
@@ -119,7 +126,7 @@ public final class Resolution {
 
         return new Resolution(
                 versionMap,
-                null
+                trace
         );
     }
 
@@ -127,28 +134,86 @@ public final class Resolution {
         return versionMap.selectedDependencies();
     }
 
-    public void printTree(PrintStream out) {
-        int depth = 0;
+    public void printTree(PrintStream out, List<Library> hideLibraries) {
+        var keyedEntries = new HashMap<List<DependencyId>, ArrayList<Trace.Entry>>();
         for (var entry : trace) {
+            keyedEntries.put(entry.path(), keyedEntries.getOrDefault(entry.path(), new ArrayList<>()));
+            keyedEntries.get(entry.path()).add(entry);
+        }
+
+        var roots = trace.stream()
+                .filter(entry -> entry.path().isEmpty())
+                .toList();
+
+        var q = new ArrayDeque<>(roots);
+
+        int depth;
+        while (!q.isEmpty()) {
+            var entry = q.pollFirst();
+            depth = entry.path().size();
+
+            if (entry.inclusionDecision() != InclusionDecision.NEW_TOP_DEP &&
+                    hideLibraries.contains(entry.library())) {
+                continue;
+            }
+
+            boolean superseded = Set.of(InclusionDecision.SAME_VERSION, InclusionDecision.NEW_DEP)
+                    .contains(entry.inclusionDecision())
+                    && !versionMap
+                            .selectedVersion(entry.library())
+                            .equals(Optional.of(entry.coordinateId()));
+
 
             if (depth != 0) {
-                System.out.print("  ".repeat(depth));
-                System.out.print(". ");
+                out.print("  ".repeat(depth));
+
+
+                if (!entry.inclusionDecision().included() && !Set.of(InclusionDecision.SAME_VERSION, InclusionDecision.NEW_DEP)
+                        .contains(entry.inclusionDecision())) {
+                    out.print("X ");
+                }
+                else if (superseded) {
+                    out.print("X ");
+                }
+                else {
+                    out.print(". ");
+                }
             }
-            System.out.print(entry.library().group().value());
-            System.out.print("/");
-            System.out.print(entry.library().artifact().value());
-            System.out.print(entry.coordinateId());
-            if (!entry.inclusionDecision().included()) {
-                System.out.print(" " + entry.inclusionDecision());
+
+            out.print(entry.library().group().value());
+            out.print("/");
+            out.print(entry.library().artifact().value());
+
+            out.print(" ");
+            out.print(entry.coordinateId());
+            if (!entry.inclusionDecision().included() && !Set.of(
+                    InclusionDecision.SAME_VERSION,
+                    InclusionDecision.NEW_DEP
+            ).contains(entry.inclusionDecision())) {
+                out.print(" " + entry.inclusionDecision());
             }
-            depth++;
-            System.out.println();
+            else if (superseded) {
+                out.print(" " + "SUPERSEDED");
+            }
+            out.println();
+
+            var nextPath = new ArrayList<>(entry.path());
+            nextPath.add(new DependencyId(entry.library(), entry.coordinateId()));
+
+            var next = keyedEntries.get(nextPath);
+            if (next != null) {
+                for (int i = next.size() - 1; i >= 0; i--) {
+                    q.addFirst(next.get(i));
+                }
+            }
         }
-        out.println("");
     }
 
     public void printTree() {
-        printTree(System.out);
+        printTree(System.out, List.of());
+    }
+
+    public void printTree(List<Library> hideLibraries) {
+        printTree(System.out, hideLibraries);
     }
 }

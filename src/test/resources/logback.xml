@@ -5,6 +5,7 @@
         </encoder>
     </appender>
 
+    <logger name="dev.mccue.resolve.maven.RemoteMavenRepository" level="TRACE"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />

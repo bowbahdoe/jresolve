@@ -116,6 +116,5 @@ record MavenMetadata(
                 .sorted(Comparator.reverseOrder())
                 .filter(range::includes)
                 .findFirst();
-
     }
 }

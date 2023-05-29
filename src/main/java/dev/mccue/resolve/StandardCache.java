@@ -6,11 +6,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
+import java.nio.channels.FileChannel;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -29,10 +29,10 @@ final class StandardCache implements Cache {
         this(Path.of(System.getProperty("user.home"), ".jresolve"));
     }
 
-    private Path keyPath(List<String> key) {
+    private Path keyPath(CacheKey key) {
         return Path.of(
                 root.toString(),
-                key.toArray(String[]::new)
+                key.components().toArray(String[]::new)
         );
     }
 
@@ -54,12 +54,11 @@ final class StandardCache implements Cache {
 
     @Override
     public Path fetchIfAbsent(CacheKey key, Supplier<InputStream> data) {
-        var filePath = keyPath(key.components());
+        var filePath = keyPath(key);
         LOG.log(Level.TRACE, () -> "About to check if file exists. filePath=" + filePath);
         if (!Files.exists(filePath)) {
             LOG.log(Level.TRACE, () -> "File does not exist. filePath=" + filePath);
             try {
-
                 LOG.log(Level.TRACE, () -> "Creating parent directories for file. filePath=" + filePath);
                 Files.createDirectories(filePath.getParent());
 

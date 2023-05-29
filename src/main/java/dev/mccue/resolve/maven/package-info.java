@@ -14,6 +14,7 @@
  * EffectivePomInfo
  *        |
  *        |   Fetch BOMs and other deps with import scope
+ *        /       + merge dependencyManagement and properties sections
  *        v
  *      ?????
  *        |

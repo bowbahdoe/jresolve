@@ -8,8 +8,6 @@ public final class Trace extends ArrayList<Trace.Entry> {
     record Entry(
             List<DependencyId> path,
             Library library,
-            Coordinate coordinate,
-            Coordinate originalCoordinate,
             CoordinateId coordinateId,
             InclusionDecision inclusionDecision
     ) {}

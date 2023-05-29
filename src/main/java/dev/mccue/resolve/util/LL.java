@@ -108,6 +108,16 @@ public sealed interface LL<T> extends Iterable<T> {
         return head;
     }
 
+    default List<T> toJavaList() {
+        var l = new ArrayList<T>();
+        LL<T> head = this;
+        while (head instanceof LL.Cons<T> cons) {
+            l.add(cons.head);
+            head = cons.tail;
+        }
+        return List.copyOf(l);
+    }
+
     boolean isPrefix(LL<T> other);
 
     default boolean isSuffix(LL<T> other) {

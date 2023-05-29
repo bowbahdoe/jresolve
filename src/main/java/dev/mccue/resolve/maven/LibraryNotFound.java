@@ -7,6 +7,11 @@ final class LibraryNotFound extends RuntimeException {
     final Library library;
     final Version version;
 
+    LibraryNotFound(Library library) {
+        this.library = library;
+        this.version = null;
+    }
+
     LibraryNotFound(Library library, Version version) {
         this.library = library;
         this.version = version;

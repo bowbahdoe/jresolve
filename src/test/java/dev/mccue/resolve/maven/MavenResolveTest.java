@@ -49,13 +49,6 @@ public class MavenResolveTest {
                                 dependency -> dependency.coordinate().id()
                         ))
         );
-
-        var classpath = new Fetch()
-                .addDependency(Dependency.mavenCentral("dev.mccue:json:0.2.3"))
-                .run()
-                .path();
-
-        System.out.println(classpath);
     }
 
     @Test

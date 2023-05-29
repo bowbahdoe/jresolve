@@ -4,6 +4,8 @@ import dev.mccue.resolve.Library;
 import dev.mccue.resolve.Variant;
 
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 record PomDependency(
         PomGroupId groupId,
@@ -38,6 +40,24 @@ record PomDependency(
                 this.groupId.orElseThrow(),
                 this.artifactId().orElseThrow(),
                 new Variant(this.classifier.orElse(Classifier.EMPTY).value())
+        );
+    }
+
+    PomDependency map(Function<String, String> resolve) {
+        return new PomDependency(
+                this.groupId().map(resolve),
+                this.artifactId().map(resolve),
+                this.version().map(resolve),
+                this.exclusions().stream()
+                        .map(exclusion -> new PomExclusion(
+                                exclusion.groupId().map(resolve),
+                                exclusion.artifactId().map(resolve)
+                        ))
+                        .collect(Collectors.toUnmodifiableSet()),
+                this.type().map(resolve),
+                this.classifier().map(resolve),
+                this.optional().map(resolve),
+                this.scope().map(resolve)
         );
     }
 }

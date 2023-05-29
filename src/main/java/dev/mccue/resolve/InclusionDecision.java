@@ -11,8 +11,7 @@ public enum InclusionDecision {
     USE_TOP(false),
     OLDER_VERSION(false),
     EXCLUDED(false),
-    PARENT_OMITTED(false),
-    SUPERSEDED(false);
+    PARENT_OMITTED(false);
 
     private final boolean included;
 
