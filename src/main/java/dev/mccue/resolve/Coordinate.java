@@ -76,7 +76,7 @@ public interface Coordinate {
      */
     CoordinateId id();
 
-    Manifest getManifest(Library library, Cache cache);
+    Manifest getManifest(Cache cache);
 
     /**
      * Gets the location of the given library on disk, assuming the library was located
@@ -86,13 +86,13 @@ public interface Coordinate {
      *     If the library is not downloaded on disk, this method will do so before returning.
      * </p>
      */
-    Path getLibraryLocation(Library library, Cache cache);
+    Path getLibraryLocation(Cache cache);
 
-    default Optional<Path> getLibrarySourcesLocation(Library library, Cache cache) {
+    default Optional<Path> getLibrarySourcesLocation(Cache cache) {
         return Optional.empty();
     }
 
-    default Optional<Path> getLibraryDocumentationLocation(Library library, Cache cache) {
+    default Optional<Path> getLibraryDocumentationLocation(Cache cache) {
         return Optional.empty();
     }
 }

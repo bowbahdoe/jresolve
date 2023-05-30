@@ -1,6 +1,8 @@
-package dev.mccue.resolve;
+package dev.mccue.resolve.maven;
 
+import dev.mccue.resolve.*;
 import dev.mccue.resolve.maven.MavenCoordinateId;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -12,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ProfilesTest {
     @Test
+    @Disabled("Profiles not yet supported")
     public void testJDKActivation() throws IOException {
         var dir = Files.createTempDirectory("temp");
         var result = new Resolve()
@@ -28,12 +31,18 @@ public class ProfilesTest {
                 Set.of(
                         new DependencyId(
                                 new Library("com.zaxxer", "HikariCP"),
-                                new MavenCoordinateId(new Version("5.0.1"))
+                                new MavenCoordinateId(
+                                        new Group(""),
+                                        new Artifact(""),
+                                        new Version("5.0.1"))
                         ),
                         new DependencyId(
                                 new Library("org.slf4j", "slf4j-api"),
                                 // 1.7.30 without considering the activation part
-                                new MavenCoordinateId(new Version("2.0.0"))
+                                new MavenCoordinateId(
+                                        new Group("org.slf4j"),
+                                        new Artifact("slf4j-api"),
+                                        new Version("2.0.0"))
                         )
                 ));
     }

@@ -31,7 +31,14 @@ public record Dependency(
             throw new IllegalArgumentException(coordinate + " does not fit the group:artifact:version format");
         }
 
-        return new Dependency(new Library(parts[0], parts[1]), new MavenCoordinate(parts[2], repositories));
+        return new Dependency(
+                new Library(parts[0], parts[1]),
+                new MavenCoordinate(
+                        new Group(parts[0]),
+                        new Artifact(parts[1]),
+                        new Version(parts[2]),
+                        repositories
+                ));
     }
 
     public static Dependency mavenCentral(String coordinate) {

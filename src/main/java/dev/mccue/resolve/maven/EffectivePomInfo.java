@@ -109,7 +109,8 @@ record EffectivePomInfo(
                     }
                     else {
                         var effectiveBom = EffectivePomInfo.from(repository.getAllPoms(
-                                        dependency.asLibraryOrThrow(),
+                                        dependency.groupId().orElseThrow(),
+                                        dependency.artifactId().orElseThrow(),
                                         dependency.version().orElseThrow(),
                                         cache
                                 ))

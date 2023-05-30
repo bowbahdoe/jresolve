@@ -20,18 +20,6 @@ public final class HttpTransport implements Transport {
     private final Lazy<HttpClient> httpClient;
     private final Consumer<HttpRequest.Builder> enrichRequest;
 
-    public HttpTransport(String url) {
-        this(url, HttpClient::newHttpClient);
-    }
-
-    public HttpTransport(String url, Supplier<HttpClient> httpClient) {
-        this(url, httpClient, request -> {});
-    }
-
-    public HttpTransport(String url, Consumer<HttpRequest.Builder> enrichRequest) {
-        this(url, HttpClient::newHttpClient, enrichRequest);
-    }
-
     public HttpTransport(
             String url,
             Supplier<HttpClient> httpClient,
@@ -71,7 +59,7 @@ public final class HttpTransport implements Transport {
                 System.Logger.Level.TRACE,
                 () -> "About to download file. path="
                         + path
-                        + ", repository="
+                        + ", transport="
                         + this
         );
 
@@ -87,7 +75,7 @@ public final class HttpTransport implements Transport {
                             + response.statusCode()
                             + ", path="
                             + path
-                            + ", repository="
+                            + ", transport="
                             + this
             );
 

@@ -16,7 +16,7 @@ public class ResolveTest {
 
     record FakeCoordinateId(int version) implements CoordinateId {}
 
-    record FakeCoordinate(int version, Manifest manifest) implements Coordinate {
+    record FakeCoordinate(String artifact, int version, Manifest manifest) implements Coordinate {
         @Override
         public VersionOrdering compareVersions(Coordinate coordinate) {
             return coordinate instanceof FakeCoordinate fake
@@ -30,22 +30,26 @@ public class ResolveTest {
         }
 
         @Override
-        public Manifest getManifest(Library library, Cache cache) {
+        public Manifest getManifest(Cache cache) {
             return manifest;
         }
 
         @Override
-        public Path getLibraryLocation(Library library, Cache cache) {
-            return Path.of(".", library.toString(), Integer.toString(version));
+        public Path getLibraryLocation(Cache cache) {
+            return Path.of(".", artifact, Integer.toString(version));
         }
     }
 
     static Dependency fake(String artifact, int version, List<Dependency> manifest) {
-        return new Dependency(new Library("ex", artifact), new FakeCoordinate(version, new FakeManifest(manifest)));
+        return new Dependency(new Library("ex", artifact), new FakeCoordinate(
+                artifact,
+                version,
+                new FakeManifest(manifest)
+        ));
     }
 
     static Dependency fake(String artifact, int version, List<Dependency> manifest, Exclusions exclusions) {
-        return new Dependency(new Library("ex", artifact), new FakeCoordinate(version, new FakeManifest(manifest)), exclusions);
+        return new Dependency(new Library("ex", artifact), new FakeCoordinate(artifact, version, new FakeManifest(manifest)), exclusions);
     }
 
     static Dependency fake(String artifact, int version) {
@@ -196,7 +200,7 @@ public class ResolveTest {
      */
     @Test
     public void testSameVersionDifferentExclusions() {
-        var vmap1 = new Resolve()
+        var r1 = new Resolve()
                 .addDependency(fake("A", 1, List.of(
                         fake("C", 1, List.of(
                                 fake("D", 1)
@@ -208,8 +212,8 @@ public class ResolveTest {
                                 fake("D", 1)
                         ))
                 )))
-                .run()
-                .versionMap();
+                .run();
+        var vmap1 = r1.versionMap();
         var vmap2 = new Resolve()
                 .addDependency(fake("B", 1, List.of(
                         fake("C", 1, List.of(
@@ -231,10 +235,12 @@ public class ResolveTest {
                 fakeLib("C"), new FakeCoordinateId(1),
                 fakeLib("D"), new FakeCoordinateId(1)
         );
+
         assertEquals(
                 expected,
                 vmap1.selectedCoordinateIds()
         );
+
         assertEquals(
                 expected,
                 vmap2.selectedCoordinateIds()

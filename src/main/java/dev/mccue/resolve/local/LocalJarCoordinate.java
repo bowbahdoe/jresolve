@@ -16,12 +16,12 @@ public record LocalJarCoordinate(Path path) implements Coordinate {
     }
 
     @Override
-    public Manifest getManifest(Library library, Cache cache) {
+    public Manifest getManifest(Cache cache) {
         return Manifest.EMPTY;
     }
 
     @Override
-    public Path getLibraryLocation(Library library, Cache cache) {
+    public Path getLibraryLocation(Cache cache) {
         return path;
     }
 }

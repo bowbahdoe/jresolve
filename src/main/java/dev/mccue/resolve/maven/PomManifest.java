@@ -3,6 +3,7 @@ package dev.mccue.resolve.maven;
 import dev.mccue.resolve.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -21,10 +22,15 @@ record PomManifest(
                 ))
                 .toList());
     }
+
+    interface MavenCoordinateMaker {
+        MavenCoordinate make(Group group, Artifact artifact, Version version, Classifier classifier);
+    }
+
     public static PomManifest from(
             EffectivePomInfo effectivePomInfo,
             List<Scope> scopes,
-            BiFunction<Version, Classifier, MavenCoordinate> makeCoordinate
+            MavenCoordinateMaker makeCoordinate
     ) {
         var dependencies = new ArrayList<Dependency>();
 
@@ -81,7 +87,9 @@ record PomManifest(
                                     new Artifact(declaredArtifact.value()),
                                     dependency.classifier().orElse(Classifier.EMPTY).asVariant()
                             ),
-                            makeCoordinate.apply(
+                            makeCoordinate.make(
+                                    new Group(declaredGroup.value()),
+                                    new Artifact(declaredArtifact.value()),
                                     new Version(declaredVersion.value()),
                                     dependency.classifier().orElse(Classifier.EMPTY)
                             ),

@@ -4,6 +4,7 @@ import dev.mccue.resolve.*;
 import dev.mccue.resolve.doc.ToolsDeps;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,37 +18,31 @@ import java.lang.System.Logger.Level;
  * @param classifier The classifier under which the runtime artifact for the library will be found.
  * @param sourceClassifier
  * @param documentationClassifier
- * @param jdkVersion The JDK version to use when determining active profiles for POM files.
- *                   This defaults to the version provided by {@code System.getProperty("java.version")}
- * @param os Information about the current OS to use for determining active profiles for POM files.
- *           Can be overridden
  */
 public record MavenCoordinate(
+        Group group,
+        Artifact artifact,
         Version version,
         List<MavenRepository> repositories,
         List<Scope> scopes,
-        @ToolsDeps(
-                value = "https://clojurians.slack.com/archives/C0H28NMAS/p1680365565612789?thread_ts=1680362691.333169&cid=C0H28NMAS",
-                details = "TDeps makes classifier part of the artifact group/artifact[$classifier]"
-        )
         Classifier classifier,
         Classifier sourceClassifier,
-        Classifier documentationClassifier,
-        Runtime.Version jdkVersion,
-        Os os
+        Classifier documentationClassifier
 ) implements Coordinate {
     private static final System.Logger LOG = System.getLogger(MavenCoordinate.class.getName());
 
     public MavenCoordinate(
+            Group group,
+            Artifact artifact,
             Version version,
             List<MavenRepository> repositories,
             List<Scope> scopes,
             Classifier classifier,
             Classifier sourceClassifier,
-            Classifier documentationClassifier,
-            Runtime.Version jdkVersion,
-            Os os
+            Classifier documentationClassifier
     ) {
+        this.group = group;
+        this.artifact = artifact;
         this.version = version;
         this.repositories = List.copyOf(repositories);
         if (scopes.isEmpty()) {
@@ -59,63 +54,24 @@ public record MavenCoordinate(
         this.classifier = classifier;
         this.sourceClassifier = sourceClassifier;
         this.documentationClassifier = documentationClassifier;
-        this.jdkVersion = jdkVersion;
-        this.os = os;
     }
 
     public MavenCoordinate(
+            Group group,
+            Artifact artifact,
             Version version,
-            List<MavenRepository> repositories,
-            List<Scope> scopes,
-            Classifier classifier,
-            Classifier sourceClassifier,
-            Classifier documentationClassifier
+            List<MavenRepository> repositories
     ) {
         this(
+                group,
+                artifact,
                 version,
                 repositories,
-                scopes,
-                classifier,
-                sourceClassifier,
-                documentationClassifier,
-                Runtime.Version.parse(System.getProperty("java.version")),
-                new Os()
-        );
-    }
-
-    public MavenCoordinate(
-            Version version,
-            List<MavenRepository> repositories,
-            List<Scope> scopes
-    ) {
-        this(
-                version,
-                repositories,
-                scopes,
+                List.of(),
                 Classifier.EMPTY,
                 Classifier.SOURCES,
                 Classifier.JAVADOC
         );
-    }
-
-    public MavenCoordinate(String version) {
-        this(version, MavenRepository.MAVEN_CENTRAL);
-    }
-
-    public MavenCoordinate(String version, MavenRepository repository) {
-        this(new Version(version), List.of(repository));
-    }
-
-    public MavenCoordinate(String version, List<MavenRepository> repositories) {
-        this(new Version(version), repositories);
-    }
-
-    public MavenCoordinate(Version version, MavenRepository repository) {
-        this(version, List.of(repository));
-    }
-
-    public MavenCoordinate(Version version, List<MavenRepository> repositories) {
-        this(version, repositories, List.of());
     }
 
     @Override
@@ -132,37 +88,38 @@ public record MavenCoordinate(
 
     @Override
     public CoordinateId id() {
-        return new MavenCoordinateId(version);
+        return new MavenCoordinateId(group, artifact, version);
     }
 
     @Override
-    public Manifest getManifest(Library library, Cache cache) {
+    public Manifest getManifest(Cache cache) {
         for (var repository : repositories) {
             try {
-                return repository.getManifest(library, version, cache, scopes, repositories);
-            } catch (LibraryNotFound ignored) {
+                return repository.getManifest(group, artifact, version, cache, scopes, repositories);
+            } catch (ArtifactNotFound ignored) {
             }
         }
 
-        throw new LibraryNotFound(library, version);
+        throw new ArtifactNotFound(new Library(group, artifact), version);
     }
 
     @Override
-    public Path getLibraryLocation(Library library, Cache cache) {
+    public Path getLibraryLocation(Cache cache) {
         for (var repository : repositories) {
             try {
-                var key = repository.cacheKey(library, version, classifier, Extension.JAR);
+                var key = repository.cacheKey(group, artifact, version, classifier, Extension.JAR);
                 return cache.fetchIfAbsent(key, () -> repository.getArtifact(
-                        library,
+                        group,
+                        artifact,
                         version,
                         classifier,
                         Extension.JAR
                 ));
-            } catch (LibraryNotFound e) {
+            } catch (ArtifactNotFound e) {
                 LOG.log(
                         Level.TRACE,
                         () -> "Could not find artifact in repository. repository=" + repository
-                                + ", library=" + library
+                                + ", library=" + new Library(group, artifact)
                                 + ", version=" + version
                                 + ", classifier=" + classifier
                                 + ", cache=" + cache,
@@ -174,31 +131,32 @@ public record MavenCoordinate(
         LOG.log(
                 Level.TRACE,
                 () -> "Could not find artifact in any checked repository. repositories=" + repositories
-                        + ", library=" + library
+                        + ", library=" + new Library(group, artifact)
                         + ", version=" + version
                         + ", classifier=" + classifier
                         + ", cache=" + cache
         );
 
-        throw new LibraryNotFound(library, version);
+        throw new ArtifactNotFound(new Library(group, artifact), version);
     }
 
     @Override
-    public Optional<Path> getLibrarySourcesLocation(Library library, Cache cache) {
+    public Optional<Path> getLibrarySourcesLocation(Cache cache) {
         for (var repository : repositories) {
             try {
-                var key = repository.cacheKey(library, version, sourceClassifier, Extension.JAR);
+                var key = repository.cacheKey(group, artifact, version, sourceClassifier, Extension.JAR);
                 return Optional.of(cache.fetchIfAbsent(key, () -> repository.getArtifact(
-                        library,
+                        group,
+                        artifact,
                         version,
                         sourceClassifier,
                         Extension.JAR
                 )));
-            } catch (LibraryNotFound e) {
+            } catch (ArtifactNotFound e) {
                 LOG.log(
                         Level.TRACE,
                         () -> "Could not find sources in repository. repository=" + repository
-                                + ", library=" + library
+                                + ", library=" + new Library(group, artifact)
                                 + ", version=" + version
                                 + ", sourceClassifier=" + sourceClassifier
                                 + ", cache=" + cache,
@@ -210,7 +168,7 @@ public record MavenCoordinate(
         LOG.log(
                 Level.TRACE,
                 () -> "Could not find sources in any checked repository. repositories=" + repositories
-                        + ", library=" + library
+                        + ", library=" + new Library(group, artifact)
                         + ", version=" + version
                         + ", sourceClassifier=" + sourceClassifier
                         + ", cache=" + cache
@@ -220,21 +178,22 @@ public record MavenCoordinate(
     }
 
     @Override
-    public Optional<Path> getLibraryDocumentationLocation(Library library, Cache cache) {
+    public Optional<Path> getLibraryDocumentationLocation(Cache cache) {
         for (var repository : repositories) {
             try {
-                var key = repository.cacheKey(library, version, documentationClassifier, Extension.JAR);
+                var key = repository.cacheKey(group, artifact, version, documentationClassifier, Extension.JAR);
                 return Optional.of(cache.fetchIfAbsent(key, () -> repository.getArtifact(
-                        library,
+                        group,
+                        artifact,
                         version,
                         documentationClassifier,
                         Extension.JAR
                 )));
-            } catch (LibraryNotFound e) {
+            } catch (ArtifactNotFound e) {
                 LOG.log(
                         Level.TRACE,
                         () -> "Could not find documentation in repository. repository=" + repository
-                                + ", library=" + library
+                                + ", library=" + new Library(group, artifact)
                                 + ", version=" + version
                                 + ", documentationClassifier=" + documentationClassifier
                                 + ", cache=" + cache,
@@ -246,7 +205,7 @@ public record MavenCoordinate(
         LOG.log(
                 Level.TRACE,
                 () -> "Could not find documentation in any checked repository. repositories=" + repositories
-                        + ", library=" + library
+                        + ", library=" + new Library(group, artifact)
                         + ", version=" + version
                         + ", documentationClassifier=" + documentationClassifier
                         + ", cache=" + cache

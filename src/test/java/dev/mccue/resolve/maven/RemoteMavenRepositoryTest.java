@@ -14,7 +14,7 @@ public class RemoteMavenRepositoryTest {
     @Test
     public void getBasicMetadata() throws IOException {
         var metadata = MavenRepository.central()
-                .getMavenMetadata(new Library("dev.mccue", "async"));
+                .getMavenMetadata(new Group("dev.mccue"), new Artifact("async"));
         assertEquals(new MavenMetadata(
                 new Group("dev.mccue"),
                 new Artifact("async"),

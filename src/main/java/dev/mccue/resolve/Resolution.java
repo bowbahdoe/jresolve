@@ -4,6 +4,7 @@ import dev.mccue.resolve.util.LL;
 
 import java.io.PrintStream;
 import java.util.*;
+import java.util.concurrent.*;
 
 public final class Resolution {
     private final VersionMap versionMap;
@@ -18,27 +19,33 @@ public final class Resolution {
         return versionMap;
     }
 
-    static Exclusions updateExclusions(
+    record ExclusionsUpdate(
+            Exclusions newExclusions,
+            boolean wasUpdated
+    ) {
+
+    }
+
+    static ExclusionsUpdate updateExclusions(
             Library library,
             InclusionDecision inclusionDecision,
             CoordinateId coordinateId,
-            LL<DependencyId> usePath,
             HashMap<DependencyId, Exclusions> cut,
             Exclusions exclusions
     ) {
         if (inclusionDecision.included()) {
             cut.put(new DependencyId(library, coordinateId), exclusions);
-            return exclusions;
+            return new ExclusionsUpdate(exclusions, false);
         }
         else if (inclusionDecision == InclusionDecision.SAME_VERSION) {
             var key = new DependencyId(library, coordinateId);
             var cutCoord = cut.get(key);
             var newCut = cutCoord.meet(exclusions);
             cut.put(key, newCut);
-            return newCut;
+            return new ExclusionsUpdate(newCut, !newCut.equals(cutCoord));
         }
         else {
-            return exclusions;
+            return new ExclusionsUpdate(exclusions, false);
         }
     }
 
@@ -50,22 +57,30 @@ public final class Resolution {
     static Resolution expandDependencies(
             Map<Library, Dependency> initialDependencies,
             Map<Library, Dependency> overrideDependencies,
-            Cache cache
+            Cache cache,
+            ExecutorService executorService
     ) {
+
         var cut = new HashMap<DependencyId, Exclusions>();
         record QueueEntry(
                 Dependency dependency,
-                LL<DependencyId> path
+                LL<DependencyId> path,
+                Optional<Future<Manifest>> manifestPrefetch
         ) {
         }
 
         Queue<QueueEntry> q = new ArrayDeque<>();
-        initialDependencies.forEach((library, dependency) -> q.add(
-                new QueueEntry(
-                        new Dependency(library, dependency.coordinate(), dependency.exclusions()),
-                        new LL.Nil<>()
-                )
-        ));
+        initialDependencies.forEach((library, dependency) -> {
+            q.add(
+                    new QueueEntry(
+                            new Dependency(library, dependency.coordinate(), dependency.exclusions()),
+                            new LL.Nil<>(),
+                            Optional.of(
+                                    executorService.submit(() -> dependency.coordinate().getManifest(cache))
+                            )
+                    )
+            );
+        });
 
 
         var versionMap = new VersionMap();
@@ -96,17 +111,27 @@ public final class Resolution {
                     decision
             ));
 
-            var exclusions = updateExclusions(
+            var exclusionsUpdate = updateExclusions(
                     library,
                     decision,
                     coordinateId,
-                    queueEntry.path,
                     cut,
                     dependency.exclusions()
             );
 
-            if (decision.included()) {
-                var coordinateManifest = coordinate.getManifest(library, cache);
+            var exclusions = exclusionsUpdate.newExclusions;
+
+
+            if (decision.included() || exclusionsUpdate.wasUpdated) {
+                Manifest coordinateManifest = queueEntry.manifestPrefetch.map(task -> {
+                    try {
+                        return task.get();
+                    } catch (ExecutionException | InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).orElseGet(() -> coordinate.getManifest(cache));
+
+
                 var afterExclusions = coordinateManifest
                         .dependencies()
                         .stream()
@@ -117,7 +142,10 @@ public final class Resolution {
                 for (var manifestDep : afterExclusions) {
                     q.add(new QueueEntry(
                             manifestDep,
-                            queueEntry.path.prepend(new DependencyId(queueEntry.dependency))
+                            queueEntry.path.prepend(new DependencyId(queueEntry.dependency)),
+                            Optional.of(
+                                    executorService.submit(() -> manifestDep.coordinate().getManifest(cache))
+                            )
                     ));
                 }
             }

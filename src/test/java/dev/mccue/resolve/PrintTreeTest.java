@@ -4,8 +4,10 @@ import dev.mccue.resolve.maven.MavenRepository;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -13,7 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PrintTreeTest {
     @Test
-    public void testClojureAndRing(){
+    public void testClojureAndRing() throws IOException {
+        var tempDir = Files.createTempDirectory("temp");
 
         var baos = new ByteArrayOutputStream();
         new Resolve()
@@ -28,7 +31,7 @@ public class PrintTreeTest {
                                 MavenRepository.central()
                         )
                 ))
-                .withCache(Cache.standard(Path.of("./local")))
+                .withCache(Cache.standard(tempDir))
                 .run()
                 .printTree(new PrintStream(baos), List.of(new Library("org.clojure", "clojure")));
 
@@ -72,7 +75,9 @@ public class PrintTreeTest {
     }
 
     @Test
-    public void testComplexProject() {
+    public void testComplexProject() throws IOException {
+        var tempDir = Files.createTempDirectory("temp");
+
         var repos = List.of(
                 MavenRepository.central(),
                 MavenRepository.remote("https://repo.clojars.org")
@@ -110,11 +115,15 @@ public class PrintTreeTest {
                 .addDependency(Dependency.maven("resilience4clj:resilience4clj-retry:0.1.1", repos))
                 .addDependency(Dependency.maven("dev.weavejester:medley:1.7.0", repos))
                 .addDependency(Dependency.maven("com.auth0:auth0:2.1.0", repos))
-                .withCache(Cache.standard(Path.of("./local")))
+                .withCache(Cache.standard(tempDir))
                 .run()
-                .printTree(List.of(new Library("org.clojure", "clojure")));
+                .printTree(new PrintStream(baos), List.of(new Library("org.clojure", "clojure")));
 
         System.out.println(baos.toString(StandardCharsets.UTF_8));
+        assertEquals(
+                281,
+                baos.toString(StandardCharsets.UTF_8).split("\n").length
+        );
     }
 }
 

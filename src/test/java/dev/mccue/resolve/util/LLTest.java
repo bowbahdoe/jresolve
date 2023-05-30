@@ -2,10 +2,7 @@ package dev.mccue.resolve.util;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -156,5 +153,34 @@ public final class LLTest {
                 LL.fromJavaList(List.of(1, 2, 3)),
                 LL.fromJavaList(List.of()).append(1).append(2).append(3)
         );
+    }
+
+    @Test
+    public void testIterator() {
+        var ll = LL.fromJavaList(List.of(1, 2, 3));
+
+        int x = 1;
+        for (int e : ll) {
+            assertEquals(x, e);
+            x++;
+        }
+    }
+
+    @Test
+    public void testIteratorOOB() {
+        var ll = LL.fromJavaList(List.of(1, 2, 3));
+        var iter = ll.iterator();
+
+        assertTrue(iter.hasNext());
+        assertEquals(1, iter.next());
+
+        assertTrue(iter.hasNext());
+        assertEquals(2, iter.next());
+
+        assertTrue(iter.hasNext());
+        assertEquals(3, iter.next());
+
+        assertFalse(iter.hasNext());
+        assertThrows(NoSuchElementException.class, iter::next);
     }
 }

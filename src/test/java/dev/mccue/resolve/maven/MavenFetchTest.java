@@ -1,13 +1,15 @@
 package dev.mccue.resolve.maven;
 
-import dev.mccue.resolve.*;
+import dev.mccue.resolve.Cache;
+import dev.mccue.resolve.Dependency;
+import dev.mccue.resolve.Library;
+import dev.mccue.resolve.Resolve;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

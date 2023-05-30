@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -72,7 +73,7 @@ public final class MavenRepository {
     private final Transport transport;
 
     MavenRepository(String url) {
-        this(url, HttpClient::newHttpClient);
+        this(url, request -> {});
     }
 
     MavenRepository(String url, Supplier<HttpClient> httpClient) {
@@ -98,59 +99,61 @@ public final class MavenRepository {
     }
 
 
-    CacheKey cacheKey(Library library, Version version, Classifier classifier, Extension extension) {
+    CacheKey cacheKey(Group group, Artifact artifact, Version version, Classifier classifier, Extension extension) {
         var key = new ArrayList<>(
                 this.transport.cachePrefix()
         );
 
-        key.addAll(getArtifactPath(library, version, classifier, extension));
+        key.addAll(getArtifactPath(group, artifact, version, classifier, extension));
 
         return new CacheKey(key);
     }
 
 
     InputStream getArtifact(
-            Library library,
+            Group group,
+            Artifact artifact,
             Version version,
             Classifier classifier,
             Extension extension
-    ) throws LibraryNotFound {
+    ) throws ArtifactNotFound {
         return switch (transport.getFile(
-                getArtifactPath(library, version, classifier, extension)
+                getArtifactPath(group, artifact, version, classifier, extension)
         )) {
             case Transport.GetFileResult.Success(InputStream inputStream) -> inputStream;
-            case Transport.GetFileResult.NotFound __ -> throw new LibraryNotFound(library, version);
+            case Transport.GetFileResult.NotFound __ -> throw new ArtifactNotFound(new Library(group, artifact), version);
             case Transport.GetFileResult.Error(Throwable e) -> throw new RuntimeException(e);
         };
     }
 
 
-    InputStream getMetadata(Library library) {
+    InputStream getMetadata(Group group, Artifact artifact) {
         return switch (transport.getFile(
-                getMetadataPath(library)
+                getMetadataPath(group, artifact)
         )) {
             case Transport.GetFileResult.Success(InputStream inputStream) -> inputStream;
-            case Transport.GetFileResult.NotFound __ -> throw new LibraryNotFound(library);
+            case Transport.GetFileResult.NotFound __ -> throw new ArtifactNotFound(new Library(group, artifact));
             case Transport.GetFileResult.Error(Throwable e) -> throw new RuntimeException(e);
         };
     }
 
     static List<String> getArtifactPath(
-            Library library,
+            Group group,
+            Artifact artifact,
             Version version,
             Classifier classifier,
             Extension extension
     ) {
 
-        var path = new ArrayList<>(Arrays.asList(library.group()
+        var path = new ArrayList<>(Arrays.asList(group
                 .value().split("\\.")));
 
-        path.add(library.artifact().value());
+        path.add(artifact.value());
 
         path.add(version.toString());
 
         path.add(
-                library.artifact()
+                artifact
                         + "-"
                         + version
                         + (!classifier.equals(Classifier.EMPTY) ? ("-" + classifier.value()) : "")
@@ -161,20 +164,20 @@ public final class MavenRepository {
     }
 
 
-    static List<String> getMetadataPath(Library library) {
-        var path = new ArrayList<>(Arrays.asList(library.group()
+    static List<String> getMetadataPath(Group group, Artifact artifact) {
+        var path = new ArrayList<>(Arrays.asList(group
                 .value().split("\\.")));
 
-        path.add(library.artifact().value());
+        path.add(artifact.value());
         path.add("maven-metadata.xml");
 
         return List.copyOf(path);
     }
 
-    final PomInfo getPomInfo(Library library, Version version, Cache cache) throws LibraryNotFound {
-        var key = cacheKey(library, version, Classifier.EMPTY, Extension.POM);
+    final PomInfo getPomInfo(Group group, Artifact artifact, Version version, Cache cache) throws ArtifactNotFound {
+        var key = cacheKey(group, artifact, version, Classifier.EMPTY, Extension.POM);
         var pomPath = cache.fetchIfAbsent(key, () ->
-                getArtifact(library, version, Classifier.EMPTY, Extension.POM)
+                getArtifact(group, artifact, version, Classifier.EMPTY, Extension.POM)
         );
 
         try (var data = Files.newInputStream(pomPath)) {
@@ -188,10 +191,8 @@ public final class MavenRepository {
         if (pomInfo.parent() instanceof PomParent.Declared declaredPom) {
             return Optional.of(
                     getPomInfo(
-                            new Library(
-                                    new Group(declaredPom.groupId().value()),
-                                    new Artifact(declaredPom.artifactId().value())
-                            ),
+                            new Group(declaredPom.groupId().value()),
+                            new Artifact(declaredPom.artifactId().value()),
                             new Version(declaredPom.version().value()),
                             cache
                     )
@@ -202,9 +203,9 @@ public final class MavenRepository {
         }
     }
 
-    ChildHavingPomInfo getAllPoms(Library library, Version version, Cache cache) {
+    ChildHavingPomInfo getAllPoms(Group group, Artifact artifact, Version version, Cache cache) {
         var poms = new ArrayList<PomInfo>();
-        var pom = getPomInfo(library, version, cache);
+        var pom = getPomInfo(group, artifact, version, cache);
         poms.add(pom);
         while (true) {
             var parentPom = getParentPomInfo(poms.get(poms.size() - 1), cache).orElse(null);
@@ -245,17 +246,20 @@ public final class MavenRepository {
     }
 
     PomManifest getManifest(
-            Library library,
+            Group group,
+            Artifact artifact,
             Version version,
             Cache cache,
             List<Scope> scopes,
             List<MavenRepository> childRepositories
     ) {
-        var effectivePom = EffectivePomInfo.from(getAllPoms(library, version, cache));
+        var effectivePom = EffectivePomInfo.from(getAllPoms(group, artifact, version, cache));
         return PomManifest.from(
                 effectivePom.resolveImports(this, cache),
                 scopes,
-                (depVersion, defaultClassifier) -> new MavenCoordinate(
+                (depGroup, depArtifact, depVersion, defaultClassifier) -> new MavenCoordinate(
+                        depGroup,
+                        depArtifact,
                         depVersion,
                         childRepositories,
                         scopes,
@@ -266,8 +270,8 @@ public final class MavenRepository {
         ).normalize(cache);
     }
 
-    MavenMetadata getMavenMetadata(Library library) throws IOException {
-        return MavenMetadata.parseXml(new String(getMetadata(library).readAllBytes(), StandardCharsets.UTF_8));
+    MavenMetadata getMavenMetadata(Group group, Artifact artifact) throws IOException {
+        return MavenMetadata.parseXml(new String(getMetadata(group, artifact).readAllBytes(), StandardCharsets.UTF_8));
     }
 
     @Override

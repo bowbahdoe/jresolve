@@ -3,7 +3,7 @@ package dev.mccue.resolve;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class Trace extends ArrayList<Trace.Entry> {
+final class Trace extends ArrayList<Trace.Entry> {
 
     record Entry(
             List<DependencyId> path,

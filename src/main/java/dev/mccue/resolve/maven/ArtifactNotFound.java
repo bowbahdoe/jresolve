@@ -3,21 +3,21 @@ package dev.mccue.resolve.maven;
 import dev.mccue.resolve.Library;
 import dev.mccue.resolve.Version;
 
-final class LibraryNotFound extends RuntimeException {
+final class ArtifactNotFound extends RuntimeException {
     final Library library;
     final Version version;
 
-    LibraryNotFound(Library library) {
+    ArtifactNotFound(Library library) {
         this.library = library;
         this.version = null;
     }
 
-    LibraryNotFound(Library library, Version version) {
+    ArtifactNotFound(Library library, Version version) {
         this.library = library;
         this.version = version;
     }
 
-    LibraryNotFound(Throwable throwable, Library library, Version version) {
+    ArtifactNotFound(Throwable throwable, Library library, Version version) {
         super(throwable);
         this.library = library;
         this.version = version;

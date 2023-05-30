@@ -6,6 +6,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -16,9 +21,15 @@ public final class Fetch {
     private Cache cache;
     private boolean includeSources;
     private boolean includeDocumentation;
+    private ExecutorService executorService;
 
     public Fetch(Resolve resolve) {
         this.resolutionSupplier = resolve::run;
+        this.executorService = Executors.newThreadPerTaskExecutor(
+                Thread.ofVirtual()
+                        .name("fetch-", 0)
+                        .factory()
+        );
         this.cache = resolve.cache;
         this.includeSources = false;
         this.includeDocumentation = false;
@@ -26,6 +37,11 @@ public final class Fetch {
 
     public Fetch(Resolution resolution) {
         this.resolutionSupplier = () -> resolution;
+        this.executorService = Executors.newThreadPerTaskExecutor(
+                Thread.ofVirtual()
+                        .name("fetch-", 0)
+                        .factory()
+        );
         this.cache = Cache.standard();
         this.includeSources = false;
         this.includeDocumentation = false;
@@ -33,6 +49,11 @@ public final class Fetch {
 
     public Fetch withCache(Cache cache) {
         this.cache = cache;
+        return this;
+    }
+
+    public Fetch withExecutorService(ExecutorService executorService) {
+        this.executorService = executorService;
         return this;
     }
 
@@ -57,40 +78,84 @@ public final class Fetch {
 
     public Result run() {
         var selectedDependencies = resolutionSupplier.get().selectedDependencies();
-        Map<Library, Path> libraries = selectedDependencies
-                .stream()
+
+        Map<Library, Future<Path>> futurePaths = selectedDependencies.stream()
                 .collect(Collectors.toUnmodifiableMap(
                         Dependency::library,
-                        dependency -> dependency.coordinate().getLibraryLocation(dependency.library(), this.cache)
+                        dependency -> this.executorService.submit(() ->
+                                dependency.coordinate().getLibraryLocation(this.cache)
+                        )
                 ));
 
-        Map<Library, Path> sources = this.includeSources
-                ? selectedDependencies.stream()
-                .<Map.Entry<Library, Path>>mapMulti((dependency, consumer) ->
-                        dependency
-                                .coordinate()
-                                .getLibrarySourcesLocation(dependency.library(), this.cache)
-                                .ifPresent(path -> consumer.accept(Map.entry(dependency.library(), path)))
-                )
-                        .collect(Collectors.toUnmodifiableMap(
-                                Map.Entry::getKey,
-                                Map.Entry::getValue
-                        ))
-                : Map.of();
-
-        Map<Library, Path> documentation = this.includeDocumentation
-                ? selectedDependencies.stream()
-                .<Map.Entry<Library, Path>>mapMulti((dependency, consumer) ->
-                        dependency
-                                .coordinate()
-                                .getLibraryDocumentationLocation(dependency.library(), this.cache)
-                                .ifPresent(path -> consumer.accept(Map.entry(dependency.library(), path)))
-                )
+        Map<Library, Path> libraries = futurePaths
+                .entrySet()
+                .stream()
                 .collect(Collectors.toUnmodifiableMap(
                         Map.Entry::getKey,
-                        Map.Entry::getValue
+                        entry -> {
+                            try {
+                                return entry.getValue().get();
+                            } catch (InterruptedException | ExecutionException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                ));
+
+        Map<Library, Future<Optional<Path>>> futureSources = this.includeSources
+                ? selectedDependencies.stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        Dependency::library,
+                        dependency -> this.executorService.submit(() ->
+                                dependency.coordinate().getLibrarySourcesLocation(this.cache)
+                        )
                 ))
                 : Map.of();
+
+        Map<Library, Path> sources = futureSources
+                .entrySet()
+                .stream()
+                .map(entry -> {
+                    try {
+                        return Map.entry(entry.getKey(), entry.getValue().get());
+                    } catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                })
+                .filter(entry -> entry.getValue().isPresent())
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().orElseThrow()
+                ));
+
+        Map<Library, Future<Optional<Path>>> futureDocumentation = this.includeSources
+                ? selectedDependencies.stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        Dependency::library,
+                        dependency -> this.executorService.submit(() ->
+                                dependency.coordinate().getLibraryDocumentationLocation(
+                                        this.cache
+                                )
+                        )
+                ))
+                : Map.of();
+
+        Map<Library, Path> documentation = futureDocumentation
+                .entrySet()
+                .stream()
+                .map(entry -> {
+                    try {
+                        return Map.entry(entry.getKey(), entry.getValue().get());
+                    } catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .filter(entry -> entry.getValue().isPresent())
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().orElseThrow()
+                ));
+
 
         return new Result(libraries, sources, documentation);
     }

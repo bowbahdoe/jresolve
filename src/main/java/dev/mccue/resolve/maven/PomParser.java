@@ -453,7 +453,8 @@ final class PomParser extends DefaultHandler {
                     pomParser
             );
         } catch (ParserConfigurationException | SAXException e) {
-            throw new RuntimeException(e);
+
+            throw new RuntimeException(pomString, e);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

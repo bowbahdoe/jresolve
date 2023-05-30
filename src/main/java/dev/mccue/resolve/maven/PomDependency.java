@@ -35,14 +35,6 @@ record PomDependency(
         );
     }
 
-    Library asLibraryOrThrow() {
-        return new Library(
-                this.groupId.orElseThrow(),
-                this.artifactId().orElseThrow(),
-                new Variant(this.classifier.orElse(Classifier.EMPTY).value())
-        );
-    }
-
     PomDependency map(Function<String, String> resolve) {
         return new PomDependency(
                 this.groupId().map(resolve),

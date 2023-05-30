@@ -25,22 +25,46 @@ public class MavenResolveTest {
         assertEquals(
                 Map.of(
                         new Library("org.eclipse.jetty", "jetty-server"),
-                        new MavenCoordinateId(new Version("11.0.14")),
+                        new MavenCoordinateId(
+                                new Group("org.eclipse.jetty"),
+                                new Artifact("jetty-server"),
+                                new Version("11.0.14")
+                        ),
 
                         new Library("org.eclipse.jetty.toolchain", "jetty-jakarta-servlet-api"),
-                        new MavenCoordinateId(new Version("5.0.2")),
+                        new MavenCoordinateId(
+                                new Group("org.eclipse.jetty.toolchain"),
+                                new Artifact("jetty-jakarta-servlet-api"),
+                                new Version("5.0.2")
+                        ),
 
                         new Library("org.eclipse.jetty", "jetty-http"),
-                        new MavenCoordinateId(new Version("11.0.14")),
+                        new MavenCoordinateId(
+                                new Group("org.eclipse.jetty"),
+                                new Artifact("jetty-http"),
+                                new Version("11.0.14")
+                        ),
 
                         new Library("org.eclipse.jetty", "jetty-io"),
-                        new MavenCoordinateId(new Version("11.0.14")),
+                        new MavenCoordinateId(
+                                new Group("org.eclipse.jetty"),
+                                new Artifact("jetty-io"),
+                                new Version("11.0.14")
+                        ),
 
                         new Library("org.slf4j", "slf4j-api"),
-                        new MavenCoordinateId(new Version("2.0.5")),
+                        new MavenCoordinateId(
+                                new Group("org.slf4j"),
+                                new Artifact("slf4j-api"),
+                                new Version("2.0.5")
+                        ),
 
                         new Library("org.eclipse.jetty", "jetty-util"),
-                        new MavenCoordinateId(new Version("11.0.14"))
+                        new MavenCoordinateId(
+                                new Group("org.eclipse.jetty"),
+                                new Artifact("jetty-util"),
+                                new Version("11.0.14")
+                        )
                 ),
                 dependencies
                         .stream()
@@ -103,108 +127,181 @@ public class MavenResolveTest {
                 Map.ofEntries(
                         Map.entry(
                                 new Library("org.clojure", "clojure"),
-                                new MavenCoordinateId(new Version("1.11.0"))
+                                new MavenCoordinateId(
+                                        new Group("org.clojure"),
+                                        new Artifact("clojure"),
+                                        new Version("1.11.0")
+                                )
                         ),
 
                         Map.entry(
                                 new Library("org.clojure", "spec.alpha"),
-                                new MavenCoordinateId(new Version("0.3.218"))
+                                new MavenCoordinateId(
+                                        new Group("org.clojure"),
+                                        new Artifact("spec.alpha"),
+                                        new Version("0.3.218"))
                         ),
 
                         Map.entry(
                                 new Library("org.clojure", "core.specs.alpha"),
-                                new MavenCoordinateId(new Version("0.2.62"))
+                                new MavenCoordinateId(
+                                        new Group("org.clojure"),
+                                        new Artifact("core.specs.alpha"),
+                                        new Version("0.2.62"))
                         ),
 
                         Map.entry(
                                 new Library("ring", "ring"),
-                                new MavenCoordinateId(new Version("1.9.2"))
+                                new MavenCoordinateId(
+                                        new Group("ring"),
+                                        new Artifact("ring"),
+                                        new Version("1.9.2"))
                         ),
 
                         Map.entry(
                                 new Library("ring", "ring-core"),
-                                new MavenCoordinateId(new Version("1.9.2"))
+                                new MavenCoordinateId(
+                                        new Group("ring"),
+                                        new Artifact("ring-core"),
+                                        new Version("1.9.2"))
                         ),
 
                         Map.entry(
                                 new Library("ring", "ring-codec"),
-                                new MavenCoordinateId(new Version("1.1.3"))
+                                new MavenCoordinateId(
+                                        new Group("ring"),
+                                        new Artifact("ring-codec"),
+                                        new Version("1.1.3"))
                         ),
 
                         Map.entry(
                                 new Library("commons-codec", "commons-codec"),
-                                new MavenCoordinateId(new Version("1.15"))
+                                new MavenCoordinateId(
+                                        new Group("commons-codec"),
+                                        new Artifact("commons-codec"),
+                                        new Version("1.15"))
                         ),
                         Map.entry(
                                 new Library("commons-io", "commons-io"),
-                                new MavenCoordinateId(new Version("2.6"))
+                                new MavenCoordinateId(
+                                        new Group("commons-io"),
+                                        new Artifact("commons-io"),
+                                        new Version("2.6"))
                         ),
                         Map.entry(
                                 new Library("commons-fileupload", "commons-fileupload"),
-                                new MavenCoordinateId(new Version("1.4"))
+                                new MavenCoordinateId(
+                                        new Group("commons-fileupload"),
+                                        new Artifact("commons-fileupload"),
+                                        new Version("1.4"))
                         ),
                         Map.entry(
                                 new Library("crypto-random", "crypto-random"),
-                                new MavenCoordinateId(new Version("1.2.0"))
+                                new MavenCoordinateId(
+                                        new Group("crypto-random"),
+                                        new Artifact("crypto-random"),
+                                        new Version("1.2.0"))
                         ),
                         Map.entry(
                                 new Library("crypto-equality", "crypto-equality"),
-                                new MavenCoordinateId(new Version("1.0.0"))
+                                new MavenCoordinateId(
+                                        new Group("crypto-equality"),
+                                        new Artifact("crypto-equality"),
+                                        new Version("1.0.0"))
                         ),
                         Map.entry(
                                 new Library("ring", "ring-devel"),
-                                new MavenCoordinateId(new Version("1.9.2"))
+                                new MavenCoordinateId(
+                                        new Group("ring"),
+                                        new Artifact("ring-devel"),
+                                        new Version("1.9.2"))
                         ),
                         Map.entry(
                                 new Library("hiccup", "hiccup"),
-                                new MavenCoordinateId(new Version("1.0.5"))
+                                new MavenCoordinateId(
+                                        new Group("hiccup"),
+                                        new Artifact("hiccup"),
+                                        new Version("1.0.5"))
                         ),
                         Map.entry(
                                 new Library("clj-stacktrace", "clj-stacktrace"),
-                                new MavenCoordinateId(new Version("0.2.8"))
+                                new MavenCoordinateId(
+                                        new Group("clj-stacktrace"),
+                                        new Artifact("clj-stacktrace"),
+                                        new Version("0.2.8"))
                         ),
                         Map.entry(
                                 new Library("ns-tracker", "ns-tracker"),
-                                new MavenCoordinateId(new Version("0.4.0"))
+                                new MavenCoordinateId(
+                                        new Group("ns-tracker"),
+                                        new Artifact("ns-tracker"),
+                                        new Version("0.4.0"))
                         ),
                         Map.entry(
                                 new Library("org.clojure", "tools.namespace"),
-                                new MavenCoordinateId(new Version("0.2.11"))
+                                new MavenCoordinateId(
+                                        new Group("org.clojure"),
+                                        new Artifact("tools.namespace"),
+                                        new Version("0.2.11"))
                         ),
 
                         Map.entry(
                                 new Library("org.clojure", "java.classpath"),
-                                new MavenCoordinateId(new Version("0.3.0"))
+                                new MavenCoordinateId(
+                                        new Group("org.clojure"),
+                                        new Artifact("java.classpath"),
+                                        new Version("0.3.0"))
                         ),
                         Map.entry(
                                 new Library("ring", "ring-jetty-adapter"),
-                                new MavenCoordinateId(new Version("1.9.2"))
+                                new MavenCoordinateId(
+                                        new Group("ring"),
+                                        new Artifact("ring-jetty-adapter"),
+                                        new Version("1.9.2"))
                         ),
                         Map.entry(
                                 new Library("ring", "ring-servlet"),
-                                new MavenCoordinateId(new Version("1.9.2"))
+                                new MavenCoordinateId(
+                                        new Group("ring"),
+                                        new Artifact("ring-servlet"),
+                                        new Version("1.9.2"))
                         ),
 
                         Map.entry(
                                 new Library("org.eclipse.jetty", "jetty-server"),
-                                new MavenCoordinateId(new Version("9.4.38.v20210224"))
+                                new MavenCoordinateId(
+                                        new Group("org.eclipse.jetty"),
+                                        new Artifact("jetty-server"),
+                                        new Version("9.4.38.v20210224"))
                         ),
                         Map.entry(
                                 new Library("javax.servlet", "javax.servlet-api"),
-                                new MavenCoordinateId(new Version("3.1.0"))
+                                new MavenCoordinateId(
+                                        new Group("javax.servlet"),
+                                        new Artifact("javax.servlet-api"),
+                                        new Version("3.1.0"))
                         ),
                         Map.entry(
                                 new Library("org.eclipse.jetty", "jetty-http"),
-                                new MavenCoordinateId(new Version("9.4.38.v20210224"))
+                                new MavenCoordinateId(
+                                        new Group("org.eclipse.jetty"),
+                                        new Artifact("jetty-http"),
+                                        new Version("9.4.38.v20210224"))
                         ),
 
                         Map.entry(
                                 new Library("org.eclipse.jetty", "jetty-util"),
-                                new MavenCoordinateId(new Version("9.4.38.v20210224"))
+                                new MavenCoordinateId(
+                                        new Group("org.eclipse.jetty"),
+                                        new Artifact("jetty-util"),
+                                        new Version("9.4.38.v20210224"))
                         ),
                         Map.entry(
                                 new Library("org.eclipse.jetty", "jetty-io"),
-                                new MavenCoordinateId(new Version("9.4.38.v20210224"))
+                                new MavenCoordinateId(
+                                        new Group("org.eclipse.jetty"),
+                                        new Artifact("jetty-io"),
+                                        new Version("9.4.38.v20210224"))
                         )
                 ),
                 resolution
