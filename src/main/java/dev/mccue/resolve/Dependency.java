@@ -25,10 +25,10 @@ public record Dependency(
         return maven(coordinate, List.of(repository));
     }
 
-    public static Dependency maven(String coordinate, List<MavenRepository> repositories) {
-        var parts = coordinate.split(":");
+    public static Dependency maven(String coordinateString, List<MavenRepository> repositories) {
+        var parts = coordinateString.split(":");
         if (parts.length != 3 || parts[0].isBlank() || parts[1].isBlank() || parts[2].isBlank()) {
-            throw new IllegalArgumentException(coordinate + " does not fit the group:artifact:version format");
+            throw new IllegalArgumentException(coordinateString + " does not fit the group:artifact:version format");
         }
 
         return new Dependency(
@@ -45,7 +45,7 @@ public record Dependency(
         return maven(coordinate, MavenRepository.central());
     }
 
-    Dependency withExclusions(Exclusions exclusions) {
+    public Dependency withExclusions(Exclusions exclusions) {
         return new Dependency(library, coordinate, exclusions);
     }
 }

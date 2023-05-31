@@ -174,16 +174,25 @@ public final class MavenRepository {
         return List.copyOf(path);
     }
 
-    final PomInfo getPomInfo(Group group, Artifact artifact, Version version, Cache cache) throws ArtifactNotFound {
+    PomInfo getPomInfo(Group group, Artifact artifact, Version version, Cache cache) throws ArtifactNotFound {
         var key = cacheKey(group, artifact, version, Classifier.EMPTY, Extension.POM);
-        var pomPath = cache.fetchIfAbsent(key, () ->
-                getArtifact(group, artifact, version, Classifier.EMPTY, Extension.POM)
-        );
+        if (cache == null) {
+            try (var data = getArtifact(group, artifact, version, Classifier.EMPTY, Extension.POM)) {
+                return PomParser.parse(new String(data.readAllBytes(), StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        else {
+            var pomPath = cache.fetchIfAbsent(key, () ->
+                    getArtifact(group, artifact, version, Classifier.EMPTY, Extension.POM)
+            );
 
-        try (var data = Files.newInputStream(pomPath)) {
-            return PomParser.parse(new String(data.readAllBytes(), StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            try (var data = Files.newInputStream(pomPath)) {
+                return PomParser.parse(new String(data.readAllBytes(), StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 

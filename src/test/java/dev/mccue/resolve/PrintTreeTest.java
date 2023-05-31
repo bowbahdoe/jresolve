@@ -10,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -81,7 +83,6 @@ public class PrintTreeTest {
         var repos = List.of(
                 MavenRepository.central(),
                 MavenRepository.remote("https://repo.clojars.org")
-
         );
 
         var baos = new ByteArrayOutputStream();
@@ -115,6 +116,7 @@ public class PrintTreeTest {
                 .addDependency(Dependency.maven("resilience4clj:resilience4clj-retry:0.1.1", repos))
                 .addDependency(Dependency.maven("dev.weavejester:medley:1.7.0", repos))
                 .addDependency(Dependency.maven("com.auth0:auth0:2.1.0", repos))
+                .withCache(null)
                 .withCache(Cache.standard(tempDir))
                 .run()
                 .printTree(new PrintStream(baos), List.of(new Library("org.clojure", "clojure")));

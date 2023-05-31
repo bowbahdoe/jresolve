@@ -1,14 +1,11 @@
 package dev.mccue.resolve.maven;
 
 import dev.mccue.resolve.*;
-import dev.mccue.resolve.doc.ToolsDeps;
-
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 
 import java.lang.System.Logger.Level;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 
 /**
  *
@@ -119,7 +116,8 @@ public record MavenCoordinate(
                 LOG.log(
                         Level.TRACE,
                         () -> "Could not find artifact in repository. repository=" + repository
-                                + ", library=" + new Library(group, artifact)
+                                + ", group=" + group
+                                + ", artifact=" + artifact
                                 + ", version=" + version
                                 + ", classifier=" + classifier
                                 + ", cache=" + cache,
@@ -131,7 +129,8 @@ public record MavenCoordinate(
         LOG.log(
                 Level.TRACE,
                 () -> "Could not find artifact in any checked repository. repositories=" + repositories
-                        + ", library=" + new Library(group, artifact)
+                        + ", group=" + group
+                        + ", artifact=" + artifact
                         + ", version=" + version
                         + ", classifier=" + classifier
                         + ", cache=" + cache
@@ -156,7 +155,8 @@ public record MavenCoordinate(
                 LOG.log(
                         Level.TRACE,
                         () -> "Could not find sources in repository. repository=" + repository
-                                + ", library=" + new Library(group, artifact)
+                                + ", group=" + group
+                                + ", artifact=" + artifact
                                 + ", version=" + version
                                 + ", sourceClassifier=" + sourceClassifier
                                 + ", cache=" + cache,
@@ -168,7 +168,8 @@ public record MavenCoordinate(
         LOG.log(
                 Level.TRACE,
                 () -> "Could not find sources in any checked repository. repositories=" + repositories
-                        + ", library=" + new Library(group, artifact)
+                        + ", group=" + group
+                        + ", artifact=" + artifact
                         + ", version=" + version
                         + ", sourceClassifier=" + sourceClassifier
                         + ", cache=" + cache
@@ -193,7 +194,8 @@ public record MavenCoordinate(
                 LOG.log(
                         Level.TRACE,
                         () -> "Could not find documentation in repository. repository=" + repository
-                                + ", library=" + new Library(group, artifact)
+                                + ", group=" + group
+                                + ", artifact=" + artifact
                                 + ", version=" + version
                                 + ", documentationClassifier=" + documentationClassifier
                                 + ", cache=" + cache,
@@ -205,7 +207,8 @@ public record MavenCoordinate(
         LOG.log(
                 Level.TRACE,
                 () -> "Could not find documentation in any checked repository. repositories=" + repositories
-                        + ", library=" + new Library(group, artifact)
+                        + ", group=" + group
+                        + ", artifact=" + artifact
                         + ", version=" + version
                         + ", documentationClassifier=" + documentationClassifier
                         + ", cache=" + cache

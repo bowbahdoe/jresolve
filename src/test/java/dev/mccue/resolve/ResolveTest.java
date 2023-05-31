@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -72,9 +73,14 @@ public class ResolveTest {
                 .addDependency(
                         fake("B", 1)
                 )
+
                 .run();
 
-        resolution.versionMap().printPrettyString();
+        assertEquals(
+                resolution.versionMap()
+                        .selectedVersion(fakeLib("B")),
+                Optional.of(new FakeCoordinateId(1))
+        );
     }
 
     @Test
@@ -102,7 +108,20 @@ public class ResolveTest {
                    ))
                 )));
 
-        new Resolve().addDependency(dep).run().versionMap().printPrettyString();
+        var resolution = new Resolve().addDependency(dep).run();
+
+        assertEquals(
+                resolution.versionMap()
+                        .selectedCoordinateIds(),
+                Map.of(
+                        fakeLib("A"), new FakeCoordinateId(1),
+                        fakeLib("B"), new FakeCoordinateId(1),
+                        fakeLib("C"), new FakeCoordinateId(1),
+                        fakeLib("D"), new FakeCoordinateId(1),
+                        fakeLib("Y"), new FakeCoordinateId(1),
+                        fakeLib("Z"), new FakeCoordinateId(1)
+                )
+        );
     }
 
     /*

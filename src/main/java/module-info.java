@@ -4,5 +4,4 @@ module dev.mccue.resolve {
 
     exports dev.mccue.resolve;
     exports dev.mccue.resolve.maven;
-    exports dev.mccue.resolve.local;
 }

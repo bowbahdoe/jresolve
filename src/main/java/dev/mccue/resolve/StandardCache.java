@@ -3,9 +3,7 @@ package dev.mccue.resolve;
 import dev.mccue.resolve.doc.Coursier;
 import dev.mccue.resolve.doc.Gold;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.lang.System.Logger.Level;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -182,7 +180,6 @@ final class StandardCache implements Cache {
             }
 
             try {
-
                 try (var inputStream = data.get();
                      var outputStream = Files.newOutputStream(
                              filePath,
@@ -197,7 +194,5 @@ final class StandardCache implements Cache {
                 throw new UncheckedIOException(e);
             }
         }
-
-
     }
 }
