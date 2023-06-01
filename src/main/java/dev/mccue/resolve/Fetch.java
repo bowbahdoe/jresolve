@@ -24,19 +24,15 @@ public final class Fetch {
     private ExecutorService executorService;
 
     public Fetch(Resolve resolve) {
-        this.resolutionSupplier = resolve::run;
-        this.executorService = Executors.newThreadPerTaskExecutor(
-                Thread.ofVirtual()
-                        .name("fetch-", 0)
-                        .factory()
-        );
-        this.cache = resolve.cache;
-        this.includeSources = false;
-        this.includeDocumentation = false;
+        this(resolve::run);
     }
 
     public Fetch(Resolution resolution) {
-        this.resolutionSupplier = () -> resolution;
+        this(() -> resolution);
+    }
+
+    private Fetch(Supplier<Resolution> resolutionSupplier) {
+        this.resolutionSupplier = resolutionSupplier;
         this.executorService = Executors.newThreadPerTaskExecutor(
                 Thread.ofVirtual()
                         .name("fetch-", 0)

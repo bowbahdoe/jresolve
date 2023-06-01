@@ -149,7 +149,6 @@ public class ResolveTest {
                 ),
                 vmap.selectedCoordinateIds()
         );
-        vmap.printPrettyString();
     }
 
     /*
@@ -397,7 +396,6 @@ public class ResolveTest {
                 .run()
                 .versionMap();
 
-        vmap.printPrettyString();
         assertEquals(
                 Map.of(
                         fakeLib("A"), new FakeCoordinateId(1),

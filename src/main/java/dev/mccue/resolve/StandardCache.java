@@ -180,11 +180,13 @@ final class StandardCache implements Cache {
             }
 
             try {
-                try (var inputStream = data.get();
-                     var outputStream = Files.newOutputStream(
+                try (
+                        var inputStream = data.get();
+                        var outputStream = Files.newOutputStream(
                              filePath,
                              StandardOpenOption.WRITE
-                     )) {
+                        )
+                ) {
                     LOG.log(Level.TRACE, () -> "Transferring contents to file. filePath=" + filePath);
                     inputStream.transferTo(outputStream);
                     return filePath;

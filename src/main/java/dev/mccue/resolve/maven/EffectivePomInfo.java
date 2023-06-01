@@ -26,7 +26,11 @@ record EffectivePomInfo(
         Map<String, String> properties
 ) {
 
-    static EffectivePomInfo from(final ChildHavingPomInfo childHavingPomInfo) {
+    static EffectivePomInfo from(
+            final ChildHavingPomInfo childHavingPomInfo,
+            final Runtime.Version jdkVersion,
+            final Os os
+    ) {
         var properties = new LinkedHashMap<String, String>();
 
         var top = childHavingPomInfo;
@@ -36,6 +40,11 @@ record EffectivePomInfo(
             }
             top = top.child().orElse(null);
         }
+
+        properties.put("java.version", jdkVersion.toString());
+        properties.put("os.name", os.name());
+        properties.put("os.arch", os.name());
+        properties.put("os.version", os.name());
 
         Function<String, String> resolve =
                 str -> resolveProperties(properties, str);
@@ -100,7 +109,7 @@ record EffectivePomInfo(
         );
     }
 
-    EffectivePomInfo resolveImports(MavenRepository repository, Cache cache) {
+    EffectivePomInfo resolveImports(MavenRepository repository, Cache cache, Runtime.Version jdkVersion, Os os) {
         var props = new LinkedHashMap<>(properties);
         var dependencyManagementWithImportsFlattened = this.dependencyManagement.stream()
                 .mapMulti((PomDependency dependency, Consumer<PomDependency> addDep) -> {
@@ -113,8 +122,8 @@ record EffectivePomInfo(
                                         dependency.artifactId().orElseThrow(),
                                         dependency.version().orElseThrow(),
                                         cache
-                                ))
-                                .resolveImports(repository, cache);
+                                ), jdkVersion, os)
+                                .resolveImports(repository, cache, jdkVersion, os);
                         effectiveBom.properties.forEach((k, v) -> {
                             if (!props.containsKey(k)) {
                                 props.put(k, v);

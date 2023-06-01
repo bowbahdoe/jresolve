@@ -9,17 +9,13 @@ import java.util.function.Function;
 
 @Coursier("https://github.com/coursier/coursier/blob/f5f0870/modules/core/shared/src/main/scala/coursier/core/Definitions.scala#L8-L9")
 public record Group(String value) implements Comparable<Group> {
-    public static Group ALL = new Group("*");
+    public static final Group ALL = new Group("*");
     public Group {
         Objects.requireNonNull(value, "value must not be null");
     }
 
     Group map(Function<String, String> f) {
         return new Group(f.apply(this.value));
-    }
-
-    List<String> explode() {
-        return Arrays.asList(value.split("\\."));
     }
 
     @Override

@@ -19,6 +19,7 @@ record PomInfo(
 
         List<PomProperty> properties,
 
-        PomPackaging packaging
+        PomPackaging packaging,
+        List<PomProfile> profiles
 ) {
 }

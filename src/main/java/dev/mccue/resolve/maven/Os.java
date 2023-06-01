@@ -3,8 +3,9 @@ package dev.mccue.resolve.maven;
 import dev.mccue.resolve.doc.Coursier;
 import dev.mccue.resolve.doc.Maven;
 
+import java.util.HashSet;
 import java.util.Locale;
-import java.util.Objects;
+import java.util.Set;
 
 /**
  * Certain build profiles take into account the current architecture
@@ -26,10 +27,44 @@ public record Os(
     String arch,
     String version
 ) {
-    public Os {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(arch);
-        Objects.requireNonNull(version);
+    private static final Set<String> STANDARD_FAMILIES = Set.of(
+            "windows",
+            "os/2",
+            "netware",
+            "mac",
+            "os/400",
+            "openvms"
+    );
+
+    private static final Set<String> KNOWN_FAMILIES;
+
+    static {
+        var knownFamilies = new HashSet<>(STANDARD_FAMILIES);
+        knownFamilies.add("dos");
+        knownFamilies.add("tandem");
+        knownFamilies.add("win9x");
+        knownFamilies.add("z/os");
+        KNOWN_FAMILIES = Set.copyOf(knownFamilies);
+    }
+
+    public Os(
+            String name,
+            String arch,
+            String version
+    ) {
+        var archNormalized = switch (arch.toLowerCase(Locale.US)) {
+            // seems required by org.nd4j:nd4j-native:0.5.0
+            case "x86-64" -> "x86_64";
+            case String s -> s;
+        };
+
+        var nameNormalized = name.toLowerCase(Locale.US);
+        var versionNormalized = version.toLowerCase(Locale.US);
+
+        this.name = nameNormalized;
+        this.arch = archNormalized;
+        this.version = versionNormalized;
+
     }
 
     public Os() {

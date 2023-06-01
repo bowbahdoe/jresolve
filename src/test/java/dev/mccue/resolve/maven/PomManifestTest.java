@@ -21,7 +21,9 @@ public class PomManifestTest {
                 new Version("1.11.1"),
                 Cache.standard(tempDir),
                 List.of(Scope.COMPILE),
-                List.of(MAVEN_CENTRAL)
+                List.of(MAVEN_CENTRAL),
+                Runtime.version(),
+                new Os()
         );
 
         assertEquals(clojureManifest, new PomManifest(
@@ -57,7 +59,9 @@ public class PomManifestTest {
                 new Version("23.3.7"),
                 Cache.standard(tempDir),
                 List.of(),
-                List.of(MAVEN_CENTRAL)
+                List.of(MAVEN_CENTRAL),
+                Runtime.version(),
+                new Os()
         );
 
 
@@ -69,7 +73,9 @@ public class PomManifestTest {
                 new Version("23.3.7"),
                 Cache.standard(tempDir),
                 List.of(Scope.COMPILE),
-                List.of(MAVEN_CENTRAL)
+                List.of(MAVEN_CENTRAL),
+                Runtime.version(),
+                new Os()
         );
 
         assertEquals(vaadinCompileManifest, new PomManifest(List.of(

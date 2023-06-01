@@ -24,7 +24,9 @@ public record MavenCoordinate(
         List<Scope> scopes,
         Classifier classifier,
         Classifier sourceClassifier,
-        Classifier documentationClassifier
+        Classifier documentationClassifier,
+        Runtime.Version jdkVersion,
+        Os os
 ) implements Coordinate {
     private static final System.Logger LOG = System.getLogger(MavenCoordinate.class.getName());
 
@@ -36,7 +38,9 @@ public record MavenCoordinate(
             List<Scope> scopes,
             Classifier classifier,
             Classifier sourceClassifier,
-            Classifier documentationClassifier
+            Classifier documentationClassifier,
+            Runtime.Version jdkVersion,
+            Os os
     ) {
         this.group = group;
         this.artifact = artifact;
@@ -51,6 +55,32 @@ public record MavenCoordinate(
         this.classifier = classifier;
         this.sourceClassifier = sourceClassifier;
         this.documentationClassifier = documentationClassifier;
+        this.jdkVersion = jdkVersion;
+        this.os = os;
+    }
+
+    public MavenCoordinate(
+            Group group,
+            Artifact artifact,
+            Version version,
+            List<MavenRepository> repositories,
+            List<Scope> scopes,
+            Classifier classifier,
+            Classifier sourceClassifier,
+            Classifier documentationClassifier
+    ) {
+        this(
+                group,
+                artifact,
+                version,
+                repositories,
+                scopes,
+                classifier,
+                sourceClassifier,
+                documentationClassifier,
+                Runtime.version(),
+                new Os()
+        );
     }
 
     public MavenCoordinate(
@@ -92,12 +122,22 @@ public record MavenCoordinate(
     public Manifest getManifest(Cache cache) {
         for (var repository : repositories) {
             try {
-                return repository.getManifest(group, artifact, version, cache, scopes, repositories);
+                System.out.println(this);
+                var manifest = repository.getManifest(group, artifact, version, cache, scopes, repositories, jdkVersion, os);
+                System.out.println(manifest
+                        .dependencies()
+                        .stream()
+                        .map(Dependency::coordinate)
+                        .map(Coordinate::id)
+                        .toList()
+                );
+                System.out.println(manifest);
+                return manifest;
             } catch (ArtifactNotFound ignored) {
             }
         }
 
-        throw new ArtifactNotFound(new Library(group, artifact), version);
+        throw new ArtifactNotFound(group, artifact, version);
     }
 
     @Override
@@ -136,7 +176,7 @@ public record MavenCoordinate(
                         + ", cache=" + cache
         );
 
-        throw new ArtifactNotFound(new Library(group, artifact), version);
+        throw new ArtifactNotFound(group, artifact, version);
     }
 
     @Override

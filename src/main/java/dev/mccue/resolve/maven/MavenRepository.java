@@ -14,11 +14,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.lang.System.Logger.Level;
 
 public final class MavenRepository {
+    private static final System.Logger LOG =
+            System.getLogger(MavenRepository.class.getName());
+
     public static MavenRepository central() {
         return MavenRepository.MAVEN_CENTRAL;
     }
@@ -117,23 +120,104 @@ public final class MavenRepository {
             Classifier classifier,
             Extension extension
     ) throws ArtifactNotFound {
+        LOG.log(
+                Level.TRACE,
+                () -> "About to get artifact. group=" + group +
+                        ", artifact=" + artifact +
+                        ", version=" + version +
+                        ", classifier=" + classifier +
+                        ", extension=" + extension +
+                        ", transport=" + this.transport
+        );
+
         return switch (transport.getFile(
                 getArtifactPath(group, artifact, version, classifier, extension)
         )) {
-            case Transport.GetFileResult.Success(InputStream inputStream) -> inputStream;
-            case Transport.GetFileResult.NotFound __ -> throw new ArtifactNotFound(new Library(group, artifact), version);
-            case Transport.GetFileResult.Error(Throwable e) -> throw new RuntimeException(e);
+            case Transport.GetFileResult.Success(InputStream inputStream) -> {
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Successfully got file for artifact. group=" + group +
+                                ", artifact=" + artifact +
+                                ", version=" + version +
+                                ", classifier=" + classifier +
+                                ", extension=" + extension +
+                                ", transport=" + this.transport
+                );
+                yield inputStream;
+            }
+            case Transport.GetFileResult.NotFound __ -> {
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Did not find file for artifact. group=" + group +
+                                ", artifact=" + artifact +
+                                ", version=" + version +
+                                ", classifier=" + classifier +
+                                ", extension=" + extension +
+                                ", transport=" + this.transport
+                );
+
+                throw new ArtifactNotFound(group, artifact, version);
+            }
+            case Transport.GetFileResult.Error(Throwable e) -> {
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Encountered error getting file for metadata. group=" + group +
+                                ", artifact=" + artifact +
+                                ", version=" + version +
+                                ", classifier=" + classifier +
+                                ", extension=" + extension +
+                                ", transport=" + this.transport,
+                        e
+                );
+
+                throw new RuntimeException(e);
+            }
         };
     }
 
 
     InputStream getMetadata(Group group, Artifact artifact) {
+        LOG.log(
+                Level.TRACE,
+                () -> "About to get metadata. group=" + group +
+                        ", artifact=" + artifact +
+                        ", transport=" + this.transport
+        );
+
         return switch (transport.getFile(
                 getMetadataPath(group, artifact)
         )) {
-            case Transport.GetFileResult.Success(InputStream inputStream) -> inputStream;
-            case Transport.GetFileResult.NotFound __ -> throw new ArtifactNotFound(new Library(group, artifact));
-            case Transport.GetFileResult.Error(Throwable e) -> throw new RuntimeException(e);
+            case Transport.GetFileResult.Success(InputStream inputStream) -> {
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Successfully got file for metadata. group=" + group +
+                                ", artifact=" + artifact +
+                                ", transport=" + this.transport
+                );
+
+                yield inputStream;
+            }
+            case Transport.GetFileResult.NotFound __ -> {
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Did not find file for metadata. group=" + group +
+                                ", artifact=" + artifact +
+                                ", transport=" + this.transport
+                );
+
+                throw new ArtifactNotFound(group, artifact);
+            }
+            case Transport.GetFileResult.Error(Throwable e) -> {
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Encountered error getting file for metadata. group=" + group +
+                                ", artifact=" + artifact +
+                                ", transport=" + this.transport,
+                        e
+                );
+
+                throw new RuntimeException(e);
+            }
         };
     }
 
@@ -175,25 +259,34 @@ public final class MavenRepository {
     }
 
     PomInfo getPomInfo(Group group, Artifact artifact, Version version, Cache cache) throws ArtifactNotFound {
-        var key = cacheKey(group, artifact, version, Classifier.EMPTY, Extension.POM);
-        if (cache == null) {
-            try (var data = getArtifact(group, artifact, version, Classifier.EMPTY, Extension.POM)) {
-                return PomParser.parse(new String(data.readAllBytes(), StandardCharsets.UTF_8));
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-        else {
-            var pomPath = cache.fetchIfAbsent(key, () ->
-                    getArtifact(group, artifact, version, Classifier.EMPTY, Extension.POM)
-            );
+        LOG.log(
+                Level.TRACE,
+                () -> "About to fetch pom file. group=" + group +
+                        ", artifact=" + artifact +
+                        ", version=" + version +
+                        ", cache=" + cache
+        );
 
-            try (var data = Files.newInputStream(pomPath)) {
-                return PomParser.parse(new String(data.readAllBytes(), StandardCharsets.UTF_8));
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+        var key = cacheKey(group, artifact, version, Classifier.EMPTY, Extension.POM);
+        try {
+            if (cache == null) {
+                try (var data = getArtifact(group, artifact, version, Classifier.EMPTY, Extension.POM)) {
+                    return PomParser.parse(new String(data.readAllBytes(), StandardCharsets.UTF_8));
+                }
             }
+            else {
+                var pomPath = cache.fetchIfAbsent(key, () ->
+                        getArtifact(group, artifact, version, Classifier.EMPTY, Extension.POM)
+                );
+
+                try (var data = Files.newInputStream(pomPath)) {
+                    return PomParser.parse(new String(data.readAllBytes(), StandardCharsets.UTF_8));
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
+
     }
 
     Optional<PomInfo> getParentPomInfo(PomInfo pomInfo, Cache cache) {
@@ -260,11 +353,17 @@ public final class MavenRepository {
             Version version,
             Cache cache,
             List<Scope> scopes,
-            List<MavenRepository> childRepositories
+            List<MavenRepository> childRepositories,
+            Runtime.Version jdkVersion,
+            Os os
     ) {
-        var effectivePom = EffectivePomInfo.from(getAllPoms(group, artifact, version, cache));
+        var effectivePom = EffectivePomInfo.from(
+                getAllPoms(group, artifact, version, cache),
+                jdkVersion,
+                os
+        );
         return PomManifest.from(
-                effectivePom.resolveImports(this, cache),
+                effectivePom.resolveImports(this, cache, jdkVersion, os),
                 scopes,
                 (depGroup, depArtifact, depVersion, defaultClassifier) -> new MavenCoordinate(
                         depGroup,
@@ -274,7 +373,10 @@ public final class MavenRepository {
                         scopes,
                         defaultClassifier,
                         Classifier.SOURCES,
-                        Classifier.JAVADOC
+                        Classifier.JAVADOC,
+                        jdkVersion,
+                        os
+
                 )
         ).normalize(cache);
     }

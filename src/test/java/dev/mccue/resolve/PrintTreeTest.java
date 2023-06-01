@@ -88,7 +88,7 @@ public class PrintTreeTest {
         var baos = new ByteArrayOutputStream();
 
 
-        new Resolve()
+        var resolution = new Resolve()
                 .addDependency(Dependency.maven("org.clojure:clojure:1.11.0", repos))
                 .addDependency(Dependency.maven("info.sunng:ring-jetty9-adapter:0.18.3", repos))
                 .addDependency(Dependency.maven("hiccup:hiccup:2.0.0-alpha2", repos))
@@ -116,10 +116,11 @@ public class PrintTreeTest {
                 .addDependency(Dependency.maven("resilience4clj:resilience4clj-retry:0.1.1", repos))
                 .addDependency(Dependency.maven("dev.weavejester:medley:1.7.0", repos))
                 .addDependency(Dependency.maven("com.auth0:auth0:2.1.0", repos))
-                .withCache(null)
                 .withCache(Cache.standard(tempDir))
-                .run()
-                .printTree(new PrintStream(baos), List.of(new Library("org.clojure", "clojure")));
+                .run();
+        resolution.printTree(new PrintStream(baos), List.of(new Library("org.clojure", "clojure")));
+
+        resolution.printTree();
 
         System.out.println(baos.toString(StandardCharsets.UTF_8));
         assertEquals(

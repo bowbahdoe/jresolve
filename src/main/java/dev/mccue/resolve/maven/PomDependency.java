@@ -1,8 +1,5 @@
 package dev.mccue.resolve.maven;
 
-import dev.mccue.resolve.Library;
-import dev.mccue.resolve.Variant;
-
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;

@@ -9,11 +9,6 @@ public record MavenCoordinateId(
         Group group,
         Artifact artifact,
         Version version
-)
-        implements CoordinateId {
+) implements CoordinateId {
 
-    @Override
-    public String toString() {
-        return version.toString();
-    }
 }

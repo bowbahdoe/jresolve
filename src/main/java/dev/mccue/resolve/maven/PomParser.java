@@ -177,7 +177,8 @@ final class PomParser extends DefaultHandler {
                     parent,
                     List.copyOf(dependencyManagement),
                     List.copyOf(properties),
-                    packaging
+                    packaging,
+                    List.of() // TODO: Handle profiles
             );
         }
     }
@@ -429,7 +430,7 @@ final class PomParser extends DefaultHandler {
         handlers.addAll(propertyHandlers(
                 LL.fromJavaList(List.of("properties", "project")),
                 (state, key, value) ->
-                        state.properties.add(new PomProperty(key, value))
+                        state.properties.add(new PomProperty(key, value.trim()))
         ));
 
         HANDLER_MAP = handlers.stream()

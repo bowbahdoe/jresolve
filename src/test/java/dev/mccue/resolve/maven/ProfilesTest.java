@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Set;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,5 +46,19 @@ public class ProfilesTest {
                                         new Version("2.0.0"))
                         )
                 ));
+    }
+
+    @Test
+    @Disabled("Not sure exactly what to test yet, but know nd4j was a problem for coursier")
+    public void testOsActivation() {
+        new Resolve()
+                .addDependency(Dependency.mavenCentral("org.nd4j:nd4j-native:0.5.0"))
+                .withExecutorService(Executors.newSingleThreadExecutor())
+                .run()
+                .printTree();
+
+        // org.nd4j:nd4j-native:0.5.0
+
+        // somehow requires group=org.nd4j, artifact=oss-parent which does not exist
     }
 }

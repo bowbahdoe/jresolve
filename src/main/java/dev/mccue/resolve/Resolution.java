@@ -65,7 +65,7 @@ public final class Resolution {
         record QueueEntry(
                 Dependency dependency,
                 LL<DependencyId> path,
-                Optional<Future<Manifest>> manifestPrefetch
+                Future<Manifest> manifestPrefetch
         ) {
         }
 
@@ -75,9 +75,7 @@ public final class Resolution {
                     new QueueEntry(
                             new Dependency(library, dependency.coordinate(), dependency.exclusions()),
                             new LL.Nil<>(),
-                            Optional.of(
-                                    executorService.submit(() -> dependency.coordinate().getManifest(cache))
-                            )
+                            executorService.submit(() -> dependency.coordinate().getManifest(cache))
                     )
             );
         });
@@ -123,13 +121,14 @@ public final class Resolution {
 
 
             if (decision.included() || exclusionsUpdate.wasUpdated) {
-                Manifest coordinateManifest = queueEntry.manifestPrefetch.map(task -> {
-                    try {
-                        return task.get();
-                    } catch (ExecutionException | InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }).orElseGet(() -> coordinate.getManifest(cache));
+                Manifest coordinateManifest;
+                try {
+                    coordinateManifest = queueEntry.manifestPrefetch.get();
+                } catch (ExecutionException e) {
+                    throw new RuntimeException(e.getCause());
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
 
 
                 var afterExclusions = coordinateManifest
@@ -143,9 +142,7 @@ public final class Resolution {
                     q.add(new QueueEntry(
                             manifestDep,
                             queueEntry.path.prepend(new DependencyId(queueEntry.dependency)),
-                            Optional.of(
-                                    executorService.submit(() -> manifestDep.coordinate().getManifest(cache))
-                            )
+                            executorService.submit(() -> manifestDep.coordinate().getManifest(cache))
                     ));
                 }
             }
@@ -171,6 +168,8 @@ public final class Resolution {
 
         var roots = trace.stream()
                 .filter(entry -> entry.path().isEmpty())
+                .sorted(Comparator.comparing((Trace.Entry entry) -> entry.library().group())
+                        .thenComparing((Trace.Entry entry) -> entry.library().artifact()))
                 .toList();
 
         var q = new ArrayDeque<>(roots);

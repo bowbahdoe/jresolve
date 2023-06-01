@@ -3,6 +3,7 @@ package dev.mccue.resolve;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -20,8 +21,6 @@ public class ModuleFinderTest {
                 .addDependency(Dependency.mavenCentral("dev.mccue:json:0.2.3"))
                 .fetch()
                 .run();
-
-        result.libraries().values().forEach(System.out::println);
 
         var finder = result.moduleFinder();
 
