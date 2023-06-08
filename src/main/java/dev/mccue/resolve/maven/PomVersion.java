@@ -2,11 +2,13 @@ package dev.mccue.resolve.maven;
 
 import dev.mccue.resolve.Version;
 import dev.mccue.resolve.doc.Coursier;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+@NullMarked
 sealed interface PomVersion {
     enum Undeclared implements PomVersion {
         INSTANCE;

@@ -1,23 +1,26 @@
-package dev.mccue.resolve.maven;
+package dev.mccue.resolve;
 
 import dev.mccue.resolve.Version;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 
-record VersionRange(
+@NullMarked
+public record VersionRange(
         Bound start,
         Bound end
 ) {
-    VersionRange {
+    public VersionRange {
         Objects.requireNonNull(start);
         Objects.requireNonNull(end);
     }
 
-    VersionRange(
-            /* @Nullable */ Version start,
-            /* @Nullable */ Version end,
-                            boolean startInclusive,
-                            boolean endInclusive
+    public VersionRange(
+            @Nullable Version start,
+            @Nullable Version end,
+            boolean startInclusive,
+            boolean endInclusive
     ) {
         this(
                 start == null
@@ -39,7 +42,7 @@ record VersionRange(
         record Unbounded() implements Bound {}
     }
 
-    boolean includes(Version version) {
+    public boolean includes(Version version) {
         return switch (start) {
             case Bound.Unbounded __ -> true;
             case Bound.Inclusive(Version inclusiveStart) -> version.compareTo(inclusiveStart) >= 0;

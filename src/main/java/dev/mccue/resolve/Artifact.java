@@ -1,15 +1,10 @@
 package dev.mccue.resolve;
 
 import dev.mccue.resolve.doc.Coursier;
-import dev.mccue.resolve.doc.Gold;
-import dev.mccue.resolve.util.LL;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
-@Gold
 @Coursier("https://github.com/coursier/coursier/blob/f5f0870/modules/core/shared/src/main/scala/coursier/core/Definitions.scala#L18-L26")
 public record Artifact(String value) implements Comparable<Artifact> {
     public static final Artifact ALL = new Artifact("*");

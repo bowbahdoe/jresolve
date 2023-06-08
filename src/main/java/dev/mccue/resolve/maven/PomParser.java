@@ -117,6 +117,8 @@ final class PomParser extends DefaultHandler {
 
         final ArrayList<PomProperty> properties = new ArrayList<>();
 
+        final ArrayList<PomProfile> profiles = new ArrayList<>();
+
         @Temporary
         PomGroupId dependencyGroupId = PomGroupId.Undeclared.INSTANCE;
 
@@ -149,6 +151,23 @@ final class PomParser extends DefaultHandler {
         @Temporary
         String propertyName = null;
 
+
+
+        String profileId = "";
+        final ArrayList<PomDependency> profileDependencies = new ArrayList<>();
+        final ArrayList<PomDependency> profileDependencyManagement = new ArrayList<>();
+        final ArrayList<PomProperty> profileProperties = new ArrayList<>();
+        final ArrayList<PomProperty> profileActivationProperties = new ArrayList<>();
+        Optional<Boolean> profileActiveByDefaultOpt = Optional.empty();
+        Optional<String> profilePropertyNameOpt = Optional.empty();
+        Optional<String> profilePropertyValueOpt = Optional.empty();
+
+        Optional<String> profileActivationOsArchOpt = Optional.empty();
+        Optional<String> profileActivationOsFamilyOpt = Optional.empty();
+        Optional<String> profileActivationOsNameOpt = Optional.empty();
+        Optional<String> profileActivationOsVersionOpt = Optional.empty();
+        PomActivation.Jdk profileActivationJdkOpt = new PomActivation.Jdk.Unspecified();
+
         PomInfo pomInfo() {
             PomParent parent;
             if (parentGroupId instanceof PomGroupId.Undeclared && parentArtifactId instanceof PomArtifactId.Undeclared
@@ -178,7 +197,7 @@ final class PomParser extends DefaultHandler {
                     List.copyOf(dependencyManagement),
                     List.copyOf(properties),
                     packaging,
-                    List.of() // TODO: Handle profiles
+                    List.copyOf(profiles)
             );
         }
     }
@@ -373,6 +392,132 @@ final class PomParser extends DefaultHandler {
         };
     }
 
+
+    private interface AddProfileHandler {
+        void add(State state, PomProfile profile);
+    }
+
+    private static List<Handler> profileHandlers(
+            LL<String> prefix,
+            AddProfileHandler add
+    ) {
+        var handlers = new ArrayList<>(List.of(
+                new SectionHandler() {
+                    @Override
+                    public void start(State state) {
+                        state.profileId = "";
+                        state.profileActiveByDefaultOpt = Optional.empty();
+                        state.profileDependencies.clear();
+                        state.profileDependencyManagement.clear();
+                        state.profileProperties.clear();
+                        state.profileActivationProperties.clear();
+                        state.profileActivationOsArchOpt = Optional.empty();
+                        state.profileActivationOsFamilyOpt = Optional.empty();
+                        state.profileActivationOsNameOpt = Optional.empty();
+                        state.profileActivationOsVersionOpt = Optional.empty();
+                        state.profileActivationJdkOpt = new PomActivation.Jdk.Unspecified();
+                    }
+
+                    @Override
+                    public void end(State state) {
+                        var profile = new PomProfile(
+                                state.profileId,
+                                state.profileActiveByDefaultOpt,
+                                new PomActivation(
+                                        List.copyOf(state.profileActivationProperties),
+                                        new PomActivation.Os(
+                                                state.profileActivationOsArchOpt,
+                                                state.profileActivationOsFamilyOpt.stream()
+                                                        .collect(Collectors.toUnmodifiableSet()),
+                                                state.profileActivationOsNameOpt,
+                                                state.profileActivationOsVersionOpt
+                                        ),
+                                        state.profileActivationJdkOpt
+                                ),
+                                List.copyOf(state.profileDependencies),
+                                List.copyOf(state.profileDependencyManagement),
+                                List.copyOf(state.profileProperties)
+                        );
+
+                        add.add(state, profile);
+                    }
+
+                    @Override
+                    public LL<String> path() {
+                        return prefix;
+                    }
+                },
+                content(
+                        new LL.Cons<>("id", prefix),
+                        (state, content) ->
+                                state.profileId = content
+                ),
+                content(
+                        new LL.Cons<>("activeByDefault", new LL.Cons<>("activation", new LL.Nil<>())),
+                        (state, content) ->
+                                state.profileActiveByDefaultOpt = switch (content) {
+                                    case "true" -> Optional.of(true);
+                                    case "false" -> Optional.of(false);
+                                    default -> Optional.empty();
+                                }
+                ),
+                content(
+                        new LL.Cons<>("value", new LL.Cons<>("property", new LL.Cons<>("activation", prefix))),
+                        (state, content) ->
+                                state.profilePropertyValueOpt = Optional.of(content)
+                ),
+                content(
+                        new LL.Cons<>("arch", new LL.Cons<>("os", new LL.Cons<>("activation", prefix))),
+                        (state, content) ->
+                                state.profileActivationOsArchOpt = Optional.of(content)
+                ),
+                content(
+                        new LL.Cons<>("family", new LL.Cons<>("os", new LL.Cons<>("activation", prefix))),
+                        (state, content) ->
+                                state.profileActivationOsFamilyOpt = Optional.of(content)
+                ),
+                content(
+                        new LL.Cons<>("artifactId", new LL.Cons<>("os", new LL.Cons<>("activation", prefix))),
+                        (state, content) ->
+                                state.profileActivationOsNameOpt = Optional.of(content)
+                ),
+                content(
+                        new LL.Cons<>("version", new LL.Cons<>("os", new LL.Cons<>("activation", prefix))),
+                        (state, content) ->
+                                state.profileActivationOsVersionOpt = Optional.of(content)
+                ),
+                content(
+                        new LL.Cons<>("jdk", new LL.Cons<>("activation", prefix)),
+                        (state, content) -> {
+
+                            // TODO
+                        }
+                )
+        ));
+
+        handlers.addAll(dependencyHandlers(
+                new LL.Cons<>("dependency", new LL.Cons<>("dependencies", prefix)),
+                (state, pomDependency) ->
+                        state.profileDependencies.add(pomDependency)
+        ));
+
+        handlers.addAll(dependencyHandlers(
+                new LL.Cons<>("dependency", new LL.Cons<>("dependencies", new LL.Cons<>("dependencyManagement", prefix))),
+                (state, pomDependency) ->
+                        state.profileDependencyManagement.add(pomDependency)
+        ));
+
+        handlers.addAll(
+                propertyHandlers(
+                        new LL.Cons<>("property", new LL.Cons<>("activation", prefix)),
+                        (state, key, value) ->
+                                state.profileProperties.add(new PomProperty(key, value))
+                )
+        );
+
+        return handlers;
+    }
+
     private static final Map<LL<String>, Handler> HANDLER_MAP;
 
     static {
@@ -433,6 +578,12 @@ final class PomParser extends DefaultHandler {
                         state.properties.add(new PomProperty(key, value.trim()))
         ));
 
+        handlers.addAll(profileHandlers(
+                LL.fromJavaList(List.of("profile", "profiles", "project")),
+                (state, profile) ->
+                        state.profiles.add(profile)
+        ));
+
         HANDLER_MAP = handlers.stream()
                 .collect(Collectors.toUnmodifiableMap(
                         Handler::path,
@@ -454,7 +605,6 @@ final class PomParser extends DefaultHandler {
                     pomParser
             );
         } catch (ParserConfigurationException | SAXException e) {
-
             throw new RuntimeException(pomString, e);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

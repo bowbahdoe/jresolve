@@ -872,5 +872,7 @@ public final class PomParserTest {
                 ),
                 parsed.dependencyManagement()
         );
+
+        System.out.println(parsed.profiles());
     }
 }

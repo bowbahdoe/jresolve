@@ -1,13 +1,11 @@
 package dev.mccue.resolve;
 
 import dev.mccue.resolve.doc.Coursier;
-import dev.mccue.resolve.doc.Gold;
 import dev.mccue.resolve.doc.Maven;
 
 import java.math.BigInteger;
 import java.util.*;
 
-@Gold
 @Coursier("https://github.com/coursier/coursier/blob/8882fb4/modules/core/shared/src/main/scala/coursier/core/Version.scala")
 @Maven("https://github.com/apache/maven-resolver/blob/97dfd1c/maven-resolver-util/src/main/java/org/eclipse/aether/util/version/GenericVersion.java")
 public final class Version implements Comparable<Version> {

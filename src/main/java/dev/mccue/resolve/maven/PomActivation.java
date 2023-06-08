@@ -1,32 +1,29 @@
 package dev.mccue.resolve.maven;
 
-import java.util.Objects;
+
+import dev.mccue.resolve.Version;
+import dev.mccue.resolve.VersionRange;
+import dev.mccue.resolve.doc.Coursier;
+
+import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.Set;
 
-sealed interface PomActivation {
-    enum Undeclared implements PomActivation {
-        INSTANCE;
-
-
-        @Override
-        public String toString() {
-            return "Undeclared[]";
-        }
+@Coursier("https://github.com/coursier/coursier/blob/f5f0870/modules/core/shared/src/main/scala/coursier/core/Activation.scala")
+record PomActivation(
+        List<PomProperty> properties,
+        Os os,
+        Jdk jdk
+) {
+    sealed interface Jdk {
+        record Unspecified() implements Jdk {}
+        record Interval(VersionRange versionInterval) implements Jdk {}
+        record SpecificVersions(List<Version> versions) implements Jdk {}
     }
-
-    record Declared(
-            Optional<JdkConstraint> jdkConstraint,
-            Optional<OsConstraint> osConstraint
-    ) implements PomActivation {
-
-    }
-
-    record JdkConstraint(String constraint) {}
-    record OsConstraint(
-            Optional<String> name,
-            Optional<String> family,
+    record Os(
             Optional<String> arch,
+            Set<String> families,
+            Optional<String> name,
             Optional<String> version
     ) {}
 }

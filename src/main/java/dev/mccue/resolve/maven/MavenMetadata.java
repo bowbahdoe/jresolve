@@ -3,6 +3,7 @@ package dev.mccue.resolve.maven;
 import dev.mccue.resolve.Artifact;
 import dev.mccue.resolve.Group;
 import dev.mccue.resolve.Version;
+import dev.mccue.resolve.VersionRange;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;

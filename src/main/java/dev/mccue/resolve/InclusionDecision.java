@@ -1,8 +1,5 @@
 package dev.mccue.resolve;
 
-import dev.mccue.resolve.doc.Gold;
-
-@Gold
 public enum InclusionDecision {
     NEW_TOP_DEP(true),
     NEW_DEP(true),

@@ -4,6 +4,7 @@ import dev.mccue.resolve.*;
 
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -122,23 +123,15 @@ public record MavenCoordinate(
     public Manifest getManifest(Cache cache) {
         for (var repository : repositories) {
             try {
-                System.out.println(this);
-                var manifest = repository.getManifest(group, artifact, version, cache, scopes, repositories, jdkVersion, os);
-                System.out.println(manifest
-                        .dependencies()
-                        .stream()
-                        .map(Dependency::coordinate)
-                        .map(Coordinate::id)
-                        .toList()
-                );
-                System.out.println(manifest);
-                return manifest;
+                return repository
+                        .getManifest(group, artifact, version, cache, scopes, repositories, jdkVersion, os);
             } catch (ArtifactNotFound ignored) {
             }
         }
 
         throw new ArtifactNotFound(group, artifact, version);
     }
+
 
     @Override
     public Path getLibraryLocation(Cache cache) {

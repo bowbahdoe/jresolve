@@ -3,7 +3,10 @@ package dev.mccue.resolve.maven;
 import dev.mccue.resolve.*;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
@@ -311,6 +314,73 @@ public class MavenResolveTest {
                                 Dependency::library,
                                 dependency -> dependency.coordinate().id()
                         ))
+        );
+    }
+
+    @Test
+    public void resolveJackson() {
+        var resolution = new Resolve()
+                .addDependency(
+                        Dependency.mavenCentral("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+                )
+                .run();
+
+        var baos = new ByteArrayOutputStream();
+        resolution.printTree(new PrintStream(baos), List.of());
+
+        assertEquals(
+                """
+                        com.fasterxml.jackson.core/jackson-databind 2.15.2
+                          . com.fasterxml.jackson.core/jackson-annotations 2.15.2
+                          . com.fasterxml.jackson.core/jackson-core 2.15.2
+                        """,
+                baos.toString(StandardCharsets.UTF_8)
+        );
+    }
+
+    @Test
+    public void resolveJacksonNoTransitive() {
+        var resolution = new Resolve()
+                .addDependency(
+                        Dependency.mavenCentral("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+                                .withExclusions(Exclusions.of(Exclusion.ALL))
+                )
+                .run();
+
+        var baos = new ByteArrayOutputStream();
+        resolution.printTree(new PrintStream(baos), List.of());
+
+        assertEquals(
+                """
+                        com.fasterxml.jackson.core/jackson-databind 2.15.2
+                        """,
+                baos.toString(StandardCharsets.UTF_8)
+        );
+    }
+
+    @Test
+    public void resolveJacksonNoAnnotations() {
+        var resolution = new Resolve()
+                .addDependency(
+                        Dependency.mavenCentral("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+                                .withExclusions(Exclusions.of(
+                                        new Exclusion(
+                                                new Group("com.fasterxml.jackson.core"),
+                                                new Artifact( "jackson-annotations")
+                                        )
+                                ))
+                )
+                .run();
+
+        var baos = new ByteArrayOutputStream();
+        resolution.printTree(new PrintStream(baos), List.of());
+
+        assertEquals(
+                """
+                        com.fasterxml.jackson.core/jackson-databind 2.15.2
+                          . com.fasterxml.jackson.core/jackson-core 2.15.2
+                        """,
+                baos.toString(StandardCharsets.UTF_8)
         );
     }
 }

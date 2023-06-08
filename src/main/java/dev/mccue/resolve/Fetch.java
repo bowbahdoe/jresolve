@@ -1,12 +1,12 @@
 package dev.mccue.resolve;
 
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
 import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -16,29 +16,42 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@NullMarked
 public final class Fetch {
-    private final Supplier<Resolution> resolutionSupplier;
-    private Cache cache;
+    private final Supplier<? extends @Nullable Resolution> resolutionSupplier;
+    private final List<Dependency> dependencies;
+    private @Nullable Cache cache;
+    private boolean includeLibraries;
     private boolean includeSources;
     private boolean includeDocumentation;
     private ExecutorService executorService;
 
     public Fetch(Resolve resolve) {
-        this(resolve::run);
+        this(resolve::run, List.of(), resolve.cache);
     }
 
     public Fetch(Resolution resolution) {
-        this(() -> resolution);
+        this(() -> resolution, List.of(), Cache.standard());
     }
 
-    private Fetch(Supplier<Resolution> resolutionSupplier) {
+    /**
+     * An explicit list of dependencies to fetch. Their manifests
+     * @param dependencies
+     */
+    public Fetch(List<Dependency> dependencies) {
+        this(() -> null, dependencies, Cache.standard());
+    }
+
+    private Fetch(Supplier<Resolution> resolutionSupplier, List<Dependency> dependencies, Cache cache) {
         this.resolutionSupplier = resolutionSupplier;
+        this.dependencies = List.copyOf(dependencies);
         this.executorService = Executors.newThreadPerTaskExecutor(
                 Thread.ofVirtual()
                         .name("fetch-", 0)
                         .factory()
         );
-        this.cache = Cache.standard();
+        this.cache = cache;
+        this.includeLibraries = true;
         this.includeSources = false;
         this.includeDocumentation = false;
     }
@@ -50,6 +63,11 @@ public final class Fetch {
 
     public Fetch withExecutorService(ExecutorService executorService) {
         this.executorService = executorService;
+        return this;
+    }
+
+    public Fetch includeLibraries(boolean includeLibraries) {
+        this.includeLibraries = includeLibraries;
         return this;
     }
 
@@ -73,15 +91,23 @@ public final class Fetch {
     }
 
     public Result run() {
-        var selectedDependencies = resolutionSupplier.get().selectedDependencies();
+        var resolution = resolutionSupplier.get();
 
-        Map<Library, Future<Path>> futurePaths = selectedDependencies.stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        Dependency::library,
-                        dependency -> this.executorService.submit(() ->
-                                dependency.coordinate().getLibraryLocation(this.cache)
-                        )
-                ));
+        var selectedDependencies = new ArrayList<Dependency>();
+        if (resolution != null) {
+            selectedDependencies.addAll(resolution.selectedDependencies());
+        }
+        selectedDependencies.addAll(this.dependencies);
+
+        Map<Library, Future<Path>> futurePaths = this.includeLibraries
+                ? selectedDependencies.stream()
+                    .collect(Collectors.toUnmodifiableMap(
+                            Dependency::library,
+                            dependency -> this.executorService.submit(() ->
+                                    dependency.coordinate().getLibraryLocation(this.cache)
+                            )
+                    ))
+                : Map.of();
 
         Map<Library, Path> libraries = futurePaths
                 .entrySet()
@@ -124,7 +150,7 @@ public final class Fetch {
                         entry -> entry.getValue().orElseThrow()
                 ));
 
-        Map<Library, Future<Optional<Path>>> futureDocumentation = this.includeSources
+        Map<Library, Future<Optional<Path>>> futureDocumentation = this.includeDocumentation
                 ? selectedDependencies.stream()
                 .collect(Collectors.toUnmodifiableMap(
                         Dependency::library,

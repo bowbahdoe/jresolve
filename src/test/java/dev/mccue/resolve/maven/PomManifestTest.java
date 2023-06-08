@@ -26,7 +26,9 @@ public class PomManifestTest {
                 new Os()
         );
 
-        assertEquals(clojureManifest, new PomManifest(
+        System.out.println(clojureManifest);
+
+        assertEquals(new PomManifest(
                 List.of(
                         new Dependency(
                             new Library("org.clojure", "spec.alpha"),
@@ -47,7 +49,7 @@ public class PomManifestTest {
                                 )
                         )
                 )
-        ));
+        ), clojureManifest);
     }
 
     @Test

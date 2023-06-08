@@ -18,6 +18,26 @@ record PomDependency(
     PomDependency(
             PomGroupId groupId,
             PomArtifactId artifactId,
+            PomVersion version,
+            Set<PomExclusion> exclusions,
+            PomType type,
+            PomClassifier classifier,
+            PomOptionality optional,
+            PomScope scope
+    ) {
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.version = version;
+        this.exclusions = Set.copyOf(exclusions);
+        this.type = type;
+        this.classifier = classifier;
+        this.optional = optional;
+        this.scope = scope;
+    }
+
+    PomDependency(
+            PomGroupId groupId,
+            PomArtifactId artifactId,
             PomVersion version
     ) {
         this(

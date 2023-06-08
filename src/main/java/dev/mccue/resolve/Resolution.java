@@ -1,5 +1,6 @@
 package dev.mccue.resolve;
 
+import dev.mccue.resolve.maven.MavenCoordinateId;
 import dev.mccue.resolve.util.LL;
 
 import java.io.PrintStream;
@@ -184,11 +185,13 @@ public final class Resolution {
                 continue;
             }
 
-            boolean superseded = Set.of(InclusionDecision.SAME_VERSION, InclusionDecision.NEW_DEP)
-                    .contains(entry.inclusionDecision())
-                    && !versionMap
-                            .selectedVersion(entry.library())
-                            .equals(Optional.of(entry.coordinateId()));
+            boolean superseded = Set
+                            .of(InclusionDecision.SAME_VERSION, InclusionDecision.NEW_DEP)
+                            .contains(entry.inclusionDecision())
+                    &&
+                            !versionMap
+                                    .selectedVersion(entry.library())
+                                    .equals(Optional.of(entry.coordinateId()));
 
 
             if (depth != 0) {
@@ -212,7 +215,12 @@ public final class Resolution {
             out.print(entry.library().artifact().value());
 
             out.print(" ");
-            out.print(entry.coordinateId());
+            if (entry.coordinateId() instanceof MavenCoordinateId mavenCoordinateId) {
+                out.print(mavenCoordinateId.version());
+            }
+            else {
+                out.print(entry.coordinateId());
+            }
             if (!entry.inclusionDecision().included() && !Set.of(
                     InclusionDecision.SAME_VERSION,
                     InclusionDecision.NEW_DEP

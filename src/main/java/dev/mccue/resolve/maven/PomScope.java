@@ -1,8 +1,11 @@
 package dev.mccue.resolve.maven;
 
+import org.jspecify.annotations.NullMarked;
+
 import java.util.Objects;
 import java.util.function.Function;
 
+@NullMarked
 sealed interface PomScope {
     enum Undeclared implements PomScope {
         INSTANCE;

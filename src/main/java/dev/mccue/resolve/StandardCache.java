@@ -1,7 +1,7 @@
 package dev.mccue.resolve;
 
 import dev.mccue.resolve.doc.Coursier;
-import dev.mccue.resolve.doc.Gold;
+import org.jspecify.annotations.NullMarked;
 
 import java.io.*;
 import java.lang.System.Logger.Level;
@@ -15,7 +15,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-@Gold
+@NullMarked
 @Coursier("""
         https://github.com/coursier/coursier/blob/929301cd078b6ba13ea78d5065cb07130576839a/modules/paths/src/main/java/coursier/paths/CachePath.java#L117
         """)
@@ -82,6 +82,7 @@ final class StandardCache implements Cache {
                 LOG.log(Level.TRACE, () -> "File does not exist. filePath=" + filePath);
                 try {
                     LOG.log(Level.TRACE, () -> "Acquiring structural lock. root=" + root);
+
                     withStructureLock(this.root, () -> {
                         try {
                             LOG.log(Level.TRACE, () -> "Creating parent directories for file. filePath=" + filePath);
@@ -173,12 +174,13 @@ final class StandardCache implements Cache {
                     }
                 });
                 LOG.log(Level.TRACE, () -> "Released structural lock. root=" + root);
-                LOG.log(Level.TRACE, () -> "About to get data from input source. data=" + data);
             }
             else {
                 LOG.log(Level.TRACE, () -> "File exists. filePath=" + filePath);
             }
 
+
+            LOG.log(Level.TRACE, () -> "About to get data from input source. data=" + data);
             try {
                 try (
                         var inputStream = data.get();

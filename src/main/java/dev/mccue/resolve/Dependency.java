@@ -38,7 +38,25 @@ public record Dependency(
                         new Artifact(parts[1]),
                         new Version(parts[2]),
                         repositories
-                ));
+                )
+        );
+    }
+
+    public static Dependency maven(
+            Group group,
+            Artifact artifact,
+            Version version,
+            List<MavenRepository> repositories
+    ) {
+        return new Dependency(
+                new Library(group, artifact),
+                new MavenCoordinate(
+                        group,
+                        artifact,
+                        version,
+                        repositories
+                )
+        );
     }
 
     public static Dependency mavenCentral(String coordinate) {

@@ -82,7 +82,6 @@ public class MavenFetchTest {
                 .includeDocumentation()
                 .run();
 
-        System.out.println(result);
         var sources = result.sources();
 
 

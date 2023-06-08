@@ -1,13 +1,11 @@
 package dev.mccue.resolve;
 
 import dev.mccue.resolve.doc.Coursier;
-import dev.mccue.resolve.doc.Gold;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@Gold
 @Coursier("https://github.com/coursier/coursier/blob/f5f0870/modules/core/shared/src/main/scala/coursier/core/MinimizedExclusions.scala")
 public final class Exclusions {
     public static final Exclusions NONE = new Exclusions(ExcludeNone.INSTANCE);

@@ -9,6 +9,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -84,7 +85,7 @@ public class PrintTreeTest {
                 MavenRepository.central(),
                 MavenRepository.remote("https://repo.clojars.org")
         );
-
+        
         var baos = new ByteArrayOutputStream();
 
 
@@ -124,7 +125,7 @@ public class PrintTreeTest {
 
         System.out.println(baos.toString(StandardCharsets.UTF_8));
         assertEquals(
-                281,
+                276,
                 baos.toString(StandardCharsets.UTF_8).split("\n").length
         );
     }

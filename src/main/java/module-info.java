@@ -1,4 +1,6 @@
 module dev.mccue.resolve {
+    requires static org.jspecify;
+
     requires java.xml;
     requires java.net.http;
 

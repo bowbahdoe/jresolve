@@ -1,10 +1,7 @@
 package dev.mccue.resolve;
 
-import dev.mccue.resolve.doc.Gold;
-
 import java.util.Objects;
 
-@Gold
 public record Exclusion(
         Group group,
         Artifact artifact
