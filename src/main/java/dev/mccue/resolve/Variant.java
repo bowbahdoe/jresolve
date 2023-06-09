@@ -14,10 +14,15 @@ import java.util.Objects;
  * </p>
  * @param value
  */
-public record Variant(String value) {
+public record Variant(String value) implements Comparable<Variant> {
     public static final Variant DEFAULT = new Variant("");
 
     public Variant {
         Objects.requireNonNull(value);
+    }
+
+    @Override
+    public int compareTo(Variant other) {
+        return this.value.compareTo(other.value);
     }
 }

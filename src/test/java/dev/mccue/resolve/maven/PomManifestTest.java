@@ -36,7 +36,8 @@ public class PomManifestTest {
                                     new Group("org.clojure"),
                                     new Artifact("spec.alpha"),
                                     new Version("0.3.218"),
-                                    Collections.singletonList(MAVEN_CENTRAL)
+                                    Collections.singletonList(MAVEN_CENTRAL),
+                                    List.of(Scope.COMPILE)
                             )
                         ),
                         new Dependency(
@@ -45,7 +46,8 @@ public class PomManifestTest {
                                         new Group("org.clojure"),
                                         new Artifact("core.specs.alpha"),
                                         new Version("0.2.62"),
-                                        Collections.singletonList(MAVEN_CENTRAL)
+                                        Collections.singletonList(MAVEN_CENTRAL),
+                                        List.of(Scope.COMPILE)
                                 )
                         )
                 )
@@ -87,7 +89,8 @@ public class PomManifestTest {
                                 new Group("com.vaadin"),
                                 new Artifact("vaadin-core"),
                                 new Version("23.3.7"),
-                                List.of(MAVEN_CENTRAL)
+                                List.of(MAVEN_CENTRAL),
+                                List.of(Scope.COMPILE)
                         )
                 ),
                 new Dependency(
@@ -96,7 +99,8 @@ public class PomManifestTest {
                                 new Group("com.vaadin"),
                                 new Artifact("vaadin-board-flow"),
                                 new Version("23.3.7"),
-                                List.of(MAVEN_CENTRAL)
+                                List.of(MAVEN_CENTRAL),
+                                List.of(Scope.COMPILE)
                         )
                 ),
                 new Dependency(
@@ -105,7 +109,8 @@ public class PomManifestTest {
                                 new Group("com.vaadin"),
                                 new Artifact("vaadin-charts-flow"),
                                 new Version("23.3.7"),
-                                List.of(MAVEN_CENTRAL)
+                                List.of(MAVEN_CENTRAL),
+                                List.of(Scope.COMPILE)
                         )
                 ),
                 new Dependency(
@@ -114,7 +119,8 @@ public class PomManifestTest {
                                 new Group("com.vaadin"),
                                 new Artifact("vaadin-cookie-consent-flow"),
                                 new Version("23.3.7"),
-                                List.of(MAVEN_CENTRAL)
+                                List.of(MAVEN_CENTRAL),
+                                List.of(Scope.COMPILE)
                         )
                 ),
                 new Dependency(
@@ -123,7 +129,8 @@ public class PomManifestTest {
                                 new Group("com.vaadin"),
                                 new Artifact("vaadin-crud-flow"),
                                 new Version("23.3.7"),
-                                List.of(MAVEN_CENTRAL)
+                                List.of(MAVEN_CENTRAL),
+                                List.of(Scope.COMPILE)
                         )
                 ),
                 new Dependency(
@@ -132,7 +139,8 @@ public class PomManifestTest {
                                 new Group("com.vaadin"),
                                 new Artifact("vaadin-grid-pro-flow"),
                                 new Version("23.3.7"),
-                                List.of(MAVEN_CENTRAL)
+                                List.of(MAVEN_CENTRAL),
+                                List.of(Scope.COMPILE)
                         )
                 ),
                 new Dependency(
@@ -141,7 +149,8 @@ public class PomManifestTest {
                                 new Group("com.vaadin"),
                                 new Artifact("vaadin-map-flow"),
                                 new Version("23.3.7"),
-                                List.of(MAVEN_CENTRAL)
+                                List.of(MAVEN_CENTRAL),
+                                List.of(Scope.COMPILE)
                         )
                 ),
                 new Dependency(
@@ -150,7 +159,8 @@ public class PomManifestTest {
                                 new Group("com.vaadin"),
                                 new Artifact("vaadin-rich-text-editor-flow"),
                                 new Version("23.3.7"),
-                                List.of(MAVEN_CENTRAL)
+                                List.of(MAVEN_CENTRAL),
+                                List.of(Scope.COMPILE)
                         )
                 ),
                 new Dependency(
@@ -159,7 +169,8 @@ public class PomManifestTest {
                                 new Group("com.vaadin"),
                                 new Artifact("collaboration-engine"),
                                 new Version("5.3.0"),
-                                List.of(MAVEN_CENTRAL)
+                                List.of(MAVEN_CENTRAL),
+                                List.of(Scope.COMPILE)
                         )
                 )
         )));

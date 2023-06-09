@@ -29,4 +29,19 @@ public interface Cache {
      * @return A {@link Path} containing the data.
      */
     Path fetch(CacheKey key, Supplier<InputStream> data);
+
+    /**
+     * Returns if the cache likely has a value for the given cache key.
+     *
+     * <p>
+     *     Because file systems can be wack, this can't say for sure whether
+     *     a call to {@link Cache#fetchIfAbsent(CacheKey, Supplier)} will
+     *     use a cached value. This should just be considered a hint.
+     * </p>
+     * @param cacheKey A unique key for the data, split into path fragments.
+     * @return true if there is a high likely-hood the cache has a value for the given key.
+     */
+    default boolean probablyContains(CacheKey cacheKey) {
+        return false;
+    }
 }

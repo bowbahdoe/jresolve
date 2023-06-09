@@ -1,9 +1,6 @@
 package dev.mccue.resolve.maven;
 
-import dev.mccue.resolve.Cache;
-import dev.mccue.resolve.Dependency;
-import dev.mccue.resolve.Library;
-import dev.mccue.resolve.Resolve;
+import dev.mccue.resolve.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -102,5 +99,128 @@ public class MavenFetchTest {
                 ),
                 sources
         );
+    }
+
+    @Test
+    public void dontFetchAnything() throws IOException {
+        var temp = Files.createTempDirectory("temp");
+
+        var clojure = Dependency.mavenCentral("org.clojure:clojure:1.11.0");
+
+        var result = new Resolve()
+                .addDependency(clojure)
+                .withCache(Cache.standard(temp))
+                .fetch()
+                .includeLibraries(false)
+                .run();
+
+        assertEquals(new Fetch.Result(Map.of(), Map.of(), Map.of()), result);
+    }
+
+    @Test
+    public void onlyFetchSources() throws IOException {
+        var temp = Files.createTempDirectory("temp");
+
+        var clojure = Dependency.mavenCentral("dev.mccue:json:0.2.3");
+
+        var result = new Resolve()
+                .addDependency(clojure)
+                .withCache(Cache.standard(temp))
+                .fetch()
+                .includeLibraries(false)
+                .includeSources()
+                .run();
+
+        assertEquals(new Fetch.Result(Map.of(), Map.of(
+                new Library("dev.mccue", "json"),
+                Path.of(
+                        temp.toString(),
+                        "https",
+                        "repo1.maven.org",
+                        "maven2",
+                        "dev",
+                        "mccue",
+                        "json",
+                        "0.2.3",
+                        "json-0.2.3-sources.jar"
+                )
+        ), Map.of()), result);
+    }
+
+    @Test
+    public void onlyFetchDocumentation() throws IOException {
+        var temp = Files.createTempDirectory("temp");
+
+        var clojure = Dependency.mavenCentral("dev.mccue:json:0.2.3");
+
+        var result = new Resolve()
+                .addDependency(clojure)
+                .withCache(Cache.standard(temp))
+                .fetch()
+                .includeLibraries(false)
+                .includeDocumentation()
+                .run();
+
+        assertEquals(new Fetch.Result(Map.of(), Map.of(), Map.of(
+                new Library("dev.mccue", "json"),
+                Path.of(
+                        temp.toString(),
+                        "https",
+                        "repo1.maven.org",
+                        "maven2",
+                        "dev",
+                        "mccue",
+                        "json",
+                        "0.2.3",
+                        "json-0.2.3-javadoc.jar"
+                )
+        )), result);
+    }
+
+    @Test
+    public void onlyFetchSourcesAndDocumentation() throws IOException {
+        var temp = Files.createTempDirectory("temp");
+
+        var clojure = Dependency.mavenCentral("dev.mccue:json:0.2.3");
+
+        var result = new Resolve()
+                .addDependency(clojure)
+                .withCache(Cache.standard(temp))
+                .fetch()
+                .includeLibraries(false)
+                .includeSources()
+                .includeDocumentation()
+                .run();
+
+        assertEquals(new Fetch.Result(Map.of(),
+                Map.of(
+                        new Library("dev.mccue", "json"),
+                        Path.of(
+                                temp.toString(),
+                                "https",
+                                "repo1.maven.org",
+                                "maven2",
+                                "dev",
+                                "mccue",
+                                "json",
+                                "0.2.3",
+                                "json-0.2.3-sources.jar"
+                        )
+                ),
+                Map.of(
+                    new Library("dev.mccue", "json"),
+                    Path.of(
+                            temp.toString(),
+                            "https",
+                            "repo1.maven.org",
+                            "maven2",
+                            "dev",
+                            "mccue",
+                            "json",
+                            "0.2.3",
+                            "json-0.2.3-javadoc.jar"
+                    )
+                )
+        ), result);
     }
 }

@@ -47,17 +47,31 @@ public record MavenCoordinate(
         this.artifact = artifact;
         this.version = version;
         this.repositories = List.copyOf(repositories);
-        if (scopes.isEmpty()) {
-            this.scopes = List.of(Scope.COMPILE);
-        }
-        else {
-            this.scopes = List.copyOf(scopes);
-        }
+        this.scopes = List.copyOf(scopes);
         this.classifier = classifier;
         this.sourceClassifier = sourceClassifier;
         this.documentationClassifier = documentationClassifier;
         this.jdkVersion = jdkVersion;
         this.os = os;
+    }
+
+    public MavenCoordinate(
+            Group group,
+            Artifact artifact,
+            Version version,
+            List<MavenRepository> repositories,
+            List<Scope> scopes
+    ) {
+        this(
+                group,
+                artifact,
+                version,
+                repositories,
+                scopes,
+                Classifier.EMPTY,
+                Classifier.SOURCES,
+                Classifier.JAVADOC
+        );
     }
 
     public MavenCoordinate(
@@ -95,10 +109,7 @@ public record MavenCoordinate(
                 artifact,
                 version,
                 repositories,
-                List.of(),
-                Classifier.EMPTY,
-                Classifier.SOURCES,
-                Classifier.JAVADOC
+                List.of(Scope.COMPILE, Scope.RUNTIME)
         );
     }
 
@@ -131,6 +142,7 @@ public record MavenCoordinate(
 
         throw new ArtifactNotFound(group, artifact, version);
     }
+
 
 
     @Override

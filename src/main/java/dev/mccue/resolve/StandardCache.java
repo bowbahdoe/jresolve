@@ -119,7 +119,6 @@ final class StandardCache implements Cache {
 
     }
 
-
     @Coursier("https://github.com/coursier/coursier/blob/929301cd078b6ba13ea78d5065cb07130576839a/modules/paths/src/main/java/coursier/paths/CachePath.java#L176")
     static void withStructureLock(Path cache, Runnable runnable) {
         try {
@@ -165,7 +164,7 @@ final class StandardCache implements Cache {
                 LOG.log(Level.TRACE, () -> "File does not exist. filePath=" + filePath);
 
                 LOG.log(Level.TRACE, () -> "Acquiring structural lock. root=" + root);
-                withStructureLock(this.root, () -> {
+                withStructureLock(root, () -> {
                     try {
                         LOG.log(Level.TRACE, () -> "Creating parent directories for file. filePath=" + filePath);
                         Files.createDirectories(filePath.getParent());
@@ -178,7 +177,6 @@ final class StandardCache implements Cache {
             else {
                 LOG.log(Level.TRACE, () -> "File exists. filePath=" + filePath);
             }
-
 
             LOG.log(Level.TRACE, () -> "About to get data from input source. data=" + data);
             try {
@@ -198,5 +196,11 @@ final class StandardCache implements Cache {
                 throw new UncheckedIOException(e);
             }
         }
+    }
+
+    @Override
+    public boolean probablyContains(CacheKey key) {
+        var filePath = keyPath(key);
+        return Files.exists(filePath);
     }
 }
