@@ -61,7 +61,6 @@ public final class Resolution {
             Cache cache,
             ExecutorService executorService
     ) {
-
         var cut = new HashMap<DependencyId, Exclusions>();
         record QueueEntry(
                 Dependency dependency,

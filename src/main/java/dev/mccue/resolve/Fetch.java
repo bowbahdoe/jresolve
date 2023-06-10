@@ -99,87 +99,77 @@ public final class Fetch {
         }
         selectedDependencies.addAll(this.dependencies);
 
-        Map<Library, Future<Path>> futurePaths = this.includeLibraries
-                ? selectedDependencies.stream()
-                    .collect(Collectors.toUnmodifiableMap(
-                            Dependency::library,
-                            dependency -> this.executorService.submit(() ->
-                                    dependency.coordinate().getLibraryLocation(this.cache)
-                            )
-                    ))
-                : Map.of();
+        var futurePaths = new HashMap<Library, Future<Path>>();
+        if (this.includeLibraries) {
+            selectedDependencies.forEach(dependency -> {
+                futurePaths.put(
+                        dependency.library(),
+                        this.executorService.submit(() ->
+                                dependency.coordinate().getLibraryLocation(this.cache)
+                        )
+                );
+            });
+        }
 
-        Map<Library, Path> libraries = futurePaths
-                .entrySet()
-                .stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        Map.Entry::getKey,
-                        entry -> {
-                            try {
-                                return entry.getValue().get();
-                            } catch (InterruptedException | ExecutionException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                ));
 
-        Map<Library, Future<Optional<Path>>> futureSources = this.includeSources
-                ? selectedDependencies.stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        Dependency::library,
-                        dependency -> this.executorService.submit(() ->
+        var futureSources = new HashMap<Library, Future<Optional<Path>>>();
+        if (this.includeSources) {
+            selectedDependencies.forEach(dependency -> {
+                futureSources.put(
+                        dependency.library(),
+                        this.executorService.submit(() ->
                                 dependency.coordinate().getLibrarySourcesLocation(this.cache)
                         )
-                ))
-                : Map.of();
+                );
+            });
+        }
 
-        Map<Library, Path> sources = futureSources
-                .entrySet()
-                .stream()
-                .map(entry -> {
-                    try {
-                        return Map.entry(entry.getKey(), entry.getValue().get());
-                    } catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                })
-                .filter(entry -> entry.getValue().isPresent())
-                .collect(Collectors.toUnmodifiableMap(
-                        Map.Entry::getKey,
-                        entry -> entry.getValue().orElseThrow()
-                ));
-
-        Map<Library, Future<Optional<Path>>> futureDocumentation = this.includeDocumentation
-                ? selectedDependencies.stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        Dependency::library,
-                        dependency -> this.executorService.submit(() ->
-                                dependency.coordinate().getLibraryDocumentationLocation(
-                                        this.cache
-                                )
+        var futureDocumentation = new HashMap<Library, Future<Optional<Path>>>();
+        if (this.includeDocumentation) {
+            selectedDependencies.forEach(dependency -> {
+                futureDocumentation.put(
+                        dependency.library(),
+                        this.executorService.submit(() ->
+                                dependency.coordinate().getLibraryDocumentationLocation(this.cache)
                         )
-                ))
-                : Map.of();
-
-        Map<Library, Path> documentation = futureDocumentation
-                .entrySet()
-                .stream()
-                .map(entry -> {
-                    try {
-                        return Map.entry(entry.getKey(), entry.getValue().get());
-                    } catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .filter(entry -> entry.getValue().isPresent())
-                .collect(Collectors.toUnmodifiableMap(
-                        Map.Entry::getKey,
-                        entry -> entry.getValue().orElseThrow()
-                ));
+                );
+            });
+        }
 
 
-        return new Result(libraries, sources, documentation);
+        var libraries = new HashMap<Library, Path>();
+        futurePaths.forEach((k, v) -> {
+            try {
+                libraries.put(k, v.get());
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        var sources = new HashMap<Library, Path>();
+        futureSources.forEach((k, v) -> {
+            try {
+                v.get().ifPresent(path -> sources.put(k, path));
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+
+        var documentation = new HashMap<Library, Path>();
+        futureDocumentation.forEach((k, v) -> {
+            try {
+                v.get().ifPresent(path -> documentation.put(k, path));
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return new Result(
+                Map.copyOf(libraries),
+                Map.copyOf(sources),
+                Map.copyOf(documentation)
+        );
     }
 
     public record Result(

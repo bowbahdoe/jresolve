@@ -37,7 +37,20 @@ public class PrintTreeTest {
                 .withCache(Cache.standard(tempDir))
                 .run()
                 .printTree(new PrintStream(baos), List.of(new Library("org.clojure", "clojure")));
+        new Resolve()
 
+                .addDependency(Dependency.mavenCentral(
+                        "org.clojure:clojure:1.11.0"
+                ))
+                .addDependency(Dependency.maven(
+                        "ring:ring:1.9.3",
+                        List.of(
+                                MavenRepository.remote("https://repo.clojars.org"),
+                                MavenRepository.central()
+                        )
+                ))
+                .withCache(Cache.standard(tempDir))
+                .run().printTree();
         assertEquals(
                 """
                         org.clojure/clojure 1.11.0
@@ -118,6 +131,7 @@ public class PrintTreeTest {
                 .addDependency(Dependency.maven("dev.weavejester:medley:1.7.0", repos))
                 .addDependency(Dependency.maven("com.auth0:auth0:2.1.0", repos))
                 .withCache(Cache.standard(tempDir))
+                //.withExecutorService(Executors.newFixedThreadPool(50))
                 .run();
         resolution.printTree(new PrintStream(baos), List.of(new Library("org.clojure", "clojure")));
 
@@ -125,7 +139,7 @@ public class PrintTreeTest {
 
         System.out.println(baos.toString(StandardCharsets.UTF_8));
         assertEquals(
-                276,
+                296,
                 baos.toString(StandardCharsets.UTF_8).split("\n").length
         );
     }
