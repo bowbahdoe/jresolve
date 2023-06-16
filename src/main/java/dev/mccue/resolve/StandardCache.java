@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 @NullMarked
@@ -23,7 +24,7 @@ final class StandardCache implements Cache {
     private static final System.Logger LOG = System.getLogger(StandardCache.class.getName());
 
     // Trying to limit the calls to String.intern via this map (https://shipilev.net/jvm/anatomy-quarks/10-string-intern/)
-    private static final ConcurrentHashMap<String, Object> INTERNED_STRINGS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, String> INTERNED_STRINGS = new ConcurrentHashMap<>();
 
     // Even if two versions of that code end up in the same JVM (say one via a shaded coursier, the other via a
     // non-shaded coursier), they will rely on the exact same object for locking here (via String.intern), so that the
@@ -46,7 +47,7 @@ final class StandardCache implements Cache {
     }
 
     public StandardCache() {
-        this(Path.of(System.getProperty("user.home"), ".jresolve"));
+        this(Path.of(System.getProperty("user.home"), ".jresolve", "cache"));
     }
 
     private Path keyPath(CacheKey key) {

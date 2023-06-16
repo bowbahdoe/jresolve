@@ -10,10 +10,7 @@ import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.lang.System.Logger.Level;
@@ -47,7 +44,7 @@ public final class MavenRepository {
     }
 
     public static MavenRepository local() {
-        return new MavenRepository(new FileTransport(Path.of(System.getProperty("user.dir"), ".m2")));
+        return new MavenRepository(new FileTransport(Path.of(System.getProperty("user.home"), ".m2")));
     }
 
     public static MavenRepository local(Path path) {
@@ -133,7 +130,7 @@ public final class MavenRepository {
         return switch (transport.getFile(
                 getArtifactPath(group, artifact, version, classifier, extension)
         )) {
-            case Transport.GetFileResult.Success(InputStream inputStream) -> {
+            case Transport.GetFileResult.Success(InputStream inputStream, OptionalLong sizeHint) -> {
                 LOG.log(
                         Level.TRACE,
                         () -> "Successfully got file for artifact. group=" + group +
@@ -187,7 +184,7 @@ public final class MavenRepository {
         return switch (transport.getFile(
                 getMetadataPath(group, artifact)
         )) {
-            case Transport.GetFileResult.Success(InputStream inputStream) -> {
+            case Transport.GetFileResult.Success(InputStream inputStream, OptionalLong sizeHint) -> {
                 LOG.log(
                         Level.TRACE,
                         () -> "Successfully got file for metadata. group=" + group +

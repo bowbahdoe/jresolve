@@ -5,12 +5,25 @@
 * Open `Coordinate` system
 
 [maven-resolver](https://github.com/apache/maven-resolver) is understandably very maven focused.
-Dependencies have to come from 
+Dependencies have to come from maven repositories, resolution is affected by global 
+configuration like `settings.xml`, and [repositories are all checked for all dependencies](https://blog.ltgt.net/maven-is-broken-by-design/).
+
+This is also true for [Shrinkwrap Resolver](https://github.com/shrinkwrap/resolver) which is built on
+[maven-resolver](https://github.com/apache/maven-resolver). 
+
+Coursier takes configuration from a different place and supports [ivy](https://ant.apache.org/ivy/) repositories in addition to maven
+style ones, 
+
+* Slightly better resolution algorithm
+
+
+
 ## Inspiration
 
 I tried my best to document where different concepts and parts of the code came from,
 but the most notable influences have been from [Coursier](https://get-coursier.io/)
 and [tools.deps](https://clojure.org/guides/deps_and_cli).
+
 
 ## Rough Edges
 

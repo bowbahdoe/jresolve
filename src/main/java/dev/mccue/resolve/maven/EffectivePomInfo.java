@@ -3,6 +3,7 @@ package dev.mccue.resolve.maven;
 import dev.mccue.resolve.Cache;
 import dev.mccue.resolve.Library;
 import dev.mccue.resolve.doc.Rife;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
  * Represents information derived from a POM after all information
  * from Parent poms is merged in and property values have been substituted.
  */
+@NullMarked
 record EffectivePomInfo(
         PomGroupId groupId,
         PomArtifactId artifactId,
@@ -43,8 +45,8 @@ record EffectivePomInfo(
 
         properties.put("java.version", jdkVersion.toString());
         properties.put("os.name", os.name());
-        properties.put("os.arch", os.name());
-        properties.put("os.version", os.name());
+        properties.put("os.arch", os.arch());
+        properties.put("os.version", os.version());
 
         Function<String, String> resolve =
                 str -> resolveProperties(properties, str);
@@ -102,8 +104,8 @@ record EffectivePomInfo(
                 groupId,
                 artifactId,
                 version,
-                dependencies.values().stream().toList(),
-                dependencyManagement.values().stream().toList(),
+                List.copyOf(dependencies.values()),
+                List.copyOf(dependencyManagement.values()),
                 packaging,
                 properties
         );

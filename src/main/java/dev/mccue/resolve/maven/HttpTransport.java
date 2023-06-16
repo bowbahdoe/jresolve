@@ -9,6 +9,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -85,7 +86,20 @@ public final class HttpTransport implements Transport {
                 }
                 new GetFileResult.Error(new IOException("Bad status code: statusCode=" + response.statusCode()));
             }
-            return new GetFileResult.Success(response.body());
+
+            var sizeHint = new OptionalLong[] { OptionalLong.empty() };
+            response.headers()
+                    .firstValue("content-length")
+                    .map(contentLengthString -> {
+                        try {
+                            return Long.parseLong(contentLengthString);
+                        } catch (NumberFormatException e) {
+                            return null;
+                        }
+                    })
+                    .ifPresent(contentLength -> sizeHint[0] = OptionalLong.of(contentLength));
+
+            return new GetFileResult.Success(response.body(), sizeHint[0]);
         } catch (IOException | InterruptedException e) {
             return new GetFileResult.Error(e);
         }

@@ -1,9 +1,11 @@
 package dev.mccue.resolve.maven;
 
 import dev.mccue.resolve.doc.Coursier;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.Objects;
 
+@NullMarked
 @Coursier("https://github.com/coursier/coursier/blob/f5f0870/modules/core/shared/src/main/scala/coursier/core/Definitions.scala#L145-L163")
 public record Extension(String value) implements Comparable<Extension> {
     public static final Extension JAR = new Extension("jar");
