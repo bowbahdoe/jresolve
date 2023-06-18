@@ -1,6 +1,7 @@
 package dev.mccue.resolve.maven;
 
 import dev.mccue.resolve.doc.Coursier;
+import dev.mccue.resolve.doc.PatternMatchHere;
 import dev.mccue.resolve.doc.Rife;
 import dev.mccue.resolve.util.LL;
 import org.xml.sax.SAXException;
@@ -34,6 +35,7 @@ final class PomParser extends DefaultHandler {
 
     // dependencies, dependency, artifactId
     @Override
+    @PatternMatchHere
     public void startElement(String _uri, String _localName, String tagName, org.xml.sax.Attributes _attributes)  {
         var paths = this.paths.prepend(tagName);
         this.paths = paths;
@@ -45,13 +47,11 @@ final class PomParser extends DefaultHandler {
         this.handlers = this.handlers.prepend(Optional.ofNullable(handler));
 
         if (handler != null) {
-            switch (handler) {
-                case ContentHandler __ -> {
-                }
-                case SectionHandler s ->
-                        s.start(state);
-                case PropertyHandler p ->
-                        p.name(state, tagName);
+            if (handler instanceof  SectionHandler s) {
+                s.start(state);
+            }
+            else if (handler instanceof PropertyHandler p) {
+                p.name(state, tagName);
             }
         }
 
@@ -61,11 +61,7 @@ final class PomParser extends DefaultHandler {
     public void characters(char[] ch, int start, int length) {
         boolean readContent = this.handlers.headOption()
                 .flatMap(handlerOpt -> handlerOpt.map(handler ->
-                        switch (handler) {
-                            case PropertyHandler __ -> true;
-                            case ContentHandler __ -> true;
-                            case SectionHandler __ -> false;
-                        }
+                        handler instanceof PropertyHandler || handler instanceof ContentHandler
                 ))
                 .orElse(false);
 
@@ -75,6 +71,7 @@ final class PomParser extends DefaultHandler {
     }
 
     @Override
+    @PatternMatchHere
     public void endElement(String _uri, String _localName, String tagName) {
         var handlerOpt = handlers.headOption().flatMap(Function.identity());
         // Calling endElement implies startElement was called,
@@ -83,13 +80,14 @@ final class PomParser extends DefaultHandler {
         this.handlers = this.handlers.assumeNotEmpty().tail();
 
         handlerOpt.ifPresent(handler -> {
-            switch (handler) {
-                case PropertyHandler p ->
-                        p.content(state, characterBuffer.toString());
-                case ContentHandler c ->
-                        c.content(state, characterBuffer.toString());
-                case SectionHandler s ->
-                        s.end(state);
+            if (handler instanceof PropertyHandler p) {
+                p.content(state, characterBuffer.toString());
+            }
+            else if (handler instanceof ContentHandler c) {
+                c.content(state, characterBuffer.toString());
+            }
+            else if (handler instanceof SectionHandler s) {
+                s.end(state);
             }
         });
 

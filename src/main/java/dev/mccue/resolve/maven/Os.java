@@ -52,11 +52,8 @@ public record Os(
             String arch,
             String version
     ) {
-        var archNormalized = switch (arch.toLowerCase(Locale.US)) {
-            // seems required by org.nd4j:nd4j-native:0.5.0
-            case "x86-64" -> "x86_64";
-            case String s -> s;
-        };
+        var archNormalized = arch.toLowerCase(Locale.US);
+        archNormalized = archNormalized.equals("x86-64") ? "x86_64" : archNormalized;
 
         var nameNormalized = name.toLowerCase(Locale.US);
         var versionNormalized = version.toLowerCase(Locale.US);

@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class Resolve {
     private final LinkedHashMap<Library, Dependency> dependencies;
@@ -15,11 +16,13 @@ public final class Resolve {
         this.dependencies = new LinkedHashMap<>();
         this.dependencyOverrides = new LinkedHashMap<>();
         this.cache = Cache.standard();
-        this.executorService = Executors.newThreadPerTaskExecutor(
-                Thread.ofVirtual()
-                        .name("resolve-", 0)
-                        .factory()
-        );
+        var count = new AtomicInteger();
+        this.executorService = Executors.newFixedThreadPool(8, (r) -> {
+            var t = new Thread(r);
+            t.setName("resolve-" + count.getAndIncrement());
+            t.setDaemon(true);
+            return t;
+        });
     }
 
     public Resolve addDependency(Dependency dependency) {

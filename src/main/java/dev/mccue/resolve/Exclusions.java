@@ -1,6 +1,7 @@
 package dev.mccue.resolve;
 
 import dev.mccue.resolve.doc.Coursier;
+import dev.mccue.resolve.doc.PatternMatchHere;
 
 import java.util.*;
 import java.util.function.Function;
@@ -253,101 +254,110 @@ public final class Exclusions {
         }
 
         @Override
+        @PatternMatchHere
         public ExclusionData join(ExclusionData other) {
-            return switch (other) {
-                case ExcludeNone __ -> this;
-                case ExcludeAll all -> all;
-                case ExcludeSpecific(
-                        Set<Group> otherByOrg,
-                        Set<Artifact> otherByArtifact,
-                        Set<Exclusion> otherSpecific
-                ) -> {
+            if (other instanceof ExcludeNone) {
+                return this;
+            }
+            else if (other instanceof ExcludeAll all) {
+                return all;
+            }
+            else if (other instanceof ExcludeSpecific specific) {
+                Set<Group> otherByOrg = specific.byGroup;
+                Set<Artifact> otherByArtifact = specific.byArtifact;
+                Set<Exclusion> otherSpecific = specific.specific;
 
-                    var joinedByGroup = new HashSet<Group>();
-                    joinedByGroup.addAll(this.byGroup);
-                    joinedByGroup.addAll(otherByOrg);
+                var joinedByGroup = new HashSet<Group>();
+                joinedByGroup.addAll(this.byGroup);
+                joinedByGroup.addAll(otherByOrg);
 
-                    var joinedByArtifact = new HashSet<Artifact>();
-                    joinedByArtifact.addAll(this.byArtifact);
-                    joinedByArtifact.addAll(otherByArtifact);
+                var joinedByArtifact = new HashSet<Artifact>();
+                joinedByArtifact.addAll(this.byArtifact);
+                joinedByArtifact.addAll(otherByArtifact);
 
-                    var joinedSpecific = new HashSet<Exclusion>();
-                    this.specific
-                            .stream()
-                            .filter(exclusion ->
-                                    !otherByOrg.contains(exclusion.group()) &&
+                var joinedSpecific = new HashSet<Exclusion>();
+                this.specific
+                        .stream()
+                        .filter(exclusion ->
+                                !otherByOrg.contains(exclusion.group()) &&
                                         !otherByArtifact.contains(exclusion.artifact()))
-                            .forEach(joinedSpecific::add);
+                        .forEach(joinedSpecific::add);
 
-                    otherSpecific
-                            .stream()
-                            .filter(exclusion ->
-                                    !byGroup.contains(exclusion.group()) &&
-                                            !byArtifact.contains(exclusion.artifact()))
-                            .forEach(joinedSpecific::add);
+                otherSpecific
+                        .stream()
+                        .filter(exclusion ->
+                                !byGroup.contains(exclusion.group()) &&
+                                        !byArtifact.contains(exclusion.artifact()))
+                        .forEach(joinedSpecific::add);
 
-                    yield new ExcludeSpecific(
-                            Set.copyOf(joinedByGroup),
-                            Set.copyOf(joinedByArtifact),
-                            Set.copyOf(joinedSpecific)
-                    );
-                }
-            };
+                return new ExcludeSpecific(
+                        Set.copyOf(joinedByGroup),
+                        Set.copyOf(joinedByArtifact),
+                        Set.copyOf(joinedSpecific)
+                );
+            }
+            else {
+                throw new IllegalStateException();
+            }
         }
 
         @Override
+        @PatternMatchHere
         public ExclusionData meet(ExclusionData other) {
-            return switch (other) {
-                case ExcludeNone none -> none;
-                case ExcludeAll __ -> this;
-                case ExcludeSpecific(
-                        Set<Group> otherByGroup,
-                        Set<Artifact> otherByArtifact,
-                        Set<Exclusion> otherSpecific
-                )  -> {
-                    var metByGroup = byGroup.stream()
-                            .filter(otherByGroup::contains)
-                            .collect(Collectors.toUnmodifiableSet());
+            if (other instanceof ExcludeNone none) {
+                return none;
+            }
+            else if (other instanceof ExcludeAll all) {
+                return this;
+            }
+            else if (other instanceof ExcludeSpecific excludeSpecific) {
+                Set<Group> otherByGroup = excludeSpecific.byGroup;
+                Set<Artifact> otherByArtifact = excludeSpecific.byArtifact;
+                Set<Exclusion> otherSpecific = excludeSpecific.specific;
 
-                    var metByArtifact = byArtifact.stream()
-                            .filter(otherByArtifact::contains)
-                            .collect(Collectors.toUnmodifiableSet());
+                var metByGroup = byGroup.stream()
+                        .filter(otherByGroup::contains)
+                        .collect(Collectors.toUnmodifiableSet());
 
-                    var metSpecific = new HashSet<Exclusion>();
-                    specific.stream()
-                            .filter(exclusion -> {
-                                var group = exclusion.group();
-                                var artifact = exclusion.artifact();
-                                return otherByGroup.contains(group) ||
-                                        otherByArtifact.contains(artifact) ||
-                                        otherSpecific.contains(exclusion);
-                            })
-                            .forEach(metSpecific::add);
+                var metByArtifact = byArtifact.stream()
+                        .filter(otherByArtifact::contains)
+                        .collect(Collectors.toUnmodifiableSet());
 
-                    otherSpecific.stream()
-                            .filter(exclusion -> {
-                                var group = exclusion.group();
-                                var artifact = exclusion.artifact();
-                                return byGroup.contains(group) ||
-                                        byArtifact.contains(artifact) ||
-                                        specific.contains(exclusion);
-                            })
-                            .forEach(metSpecific::add);
+                var metSpecific = new HashSet<Exclusion>();
+                specific.stream()
+                        .filter(exclusion -> {
+                            var group = exclusion.group();
+                            var artifact = exclusion.artifact();
+                            return otherByGroup.contains(group) ||
+                                    otherByArtifact.contains(artifact) ||
+                                    otherSpecific.contains(exclusion);
+                        })
+                        .forEach(metSpecific::add);
 
-                    if (metByGroup.isEmpty() && metByArtifact.isEmpty() && metSpecific.isEmpty()) {
-                        yield ExcludeNone.INSTANCE;
-                    }
-                    else {
-                        yield new ExcludeSpecific(
-                                metByGroup,
-                                metByArtifact,
-                                Set.copyOf(metSpecific)
-                        );
-                    }
+                otherSpecific.stream()
+                        .filter(exclusion -> {
+                            var group = exclusion.group();
+                            var artifact = exclusion.artifact();
+                            return byGroup.contains(group) ||
+                                    byArtifact.contains(artifact) ||
+                                    specific.contains(exclusion);
+                        })
+                        .forEach(metSpecific::add);
 
-
+                if (metByGroup.isEmpty() && metByArtifact.isEmpty() && metSpecific.isEmpty()) {
+                    return ExcludeNone.INSTANCE;
                 }
-            };
+                else {
+                    return new ExcludeSpecific(
+                            metByGroup,
+                            metByArtifact,
+                            Set.copyOf(metSpecific)
+                    );
+                }
+            }
+            else {
+                throw new IllegalStateException();
+            }
         }
 
         @Override
@@ -374,15 +384,22 @@ public final class Exclusions {
         }
 
         @Override
+        @PatternMatchHere
         public boolean subsetOf(ExclusionData other) {
-            return switch (other) {
-                case ExcludeNone __ -> false;
-                case ExcludeAll __ -> true;
-                case ExcludeSpecific excludeSpecific ->
-                        excludeSpecific.byGroup.containsAll(byGroup)
+            if (other instanceof ExcludeNone) {
+                return false;
+            }
+            else if (other instanceof ExcludeAll) {
+                return true;
+            }
+            else if (other instanceof ExcludeSpecific excludeSpecific) {
+                return excludeSpecific.byGroup.containsAll(byGroup)
                         && excludeSpecific.byArtifact.containsAll(byArtifact)
                         && excludeSpecific.specific.containsAll(specific);
-            };
+            }
+            else {
+                throw new IllegalStateException();
+            }
         }
 
         @Override

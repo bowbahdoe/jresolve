@@ -234,7 +234,7 @@ public class GenericVersionTest extends AbstractVersionTest {
     public void testCaseInsensitiveOrderingOfQualifiersIsLocaleIndependent() {
         Locale orig = Locale.getDefault();
         try {
-            Locale[] locales = {Locale.ENGLISH, Locale.of("tr")};
+            Locale[] locales = {Locale.ENGLISH, new Locale("tr")};
             for (Locale locale : locales) {
                 Locale.setDefault(locale);
                 assertOrder(X_EQ_Y, "1-abcdefghijklmnopqrstuvwxyz", "1-ABCDEFGHIJKLMNOPQRSTUVWXYZ");

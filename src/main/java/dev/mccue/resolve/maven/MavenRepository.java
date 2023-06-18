@@ -1,6 +1,7 @@
 package dev.mccue.resolve.maven;
 
 import dev.mccue.resolve.*;
+import dev.mccue.resolve.doc.PatternMatchHere;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -127,52 +128,60 @@ public final class MavenRepository {
                         ", transport=" + this.transport
         );
 
-        return switch (transport.getFile(
+        var getFileResult = transport.getFile(
                 getArtifactPath(group, artifact, version, classifier, extension)
-        )) {
-            case Transport.GetFileResult.Success(InputStream inputStream, OptionalLong sizeHint) -> {
-                LOG.log(
-                        Level.TRACE,
-                        () -> "Successfully got file for artifact. group=" + group +
-                                ", artifact=" + artifact +
-                                ", version=" + version +
-                                ", classifier=" + classifier +
-                                ", extension=" + extension +
-                                ", transport=" + this.transport
-                );
-                yield inputStream;
-            }
-            case Transport.GetFileResult.NotFound __ -> {
-                LOG.log(
-                        Level.TRACE,
-                        () -> "Did not find file for artifact. group=" + group +
-                                ", artifact=" + artifact +
-                                ", version=" + version +
-                                ", classifier=" + classifier +
-                                ", extension=" + extension +
-                                ", transport=" + this.transport
-                );
+        );
 
-                throw new ArtifactNotFound(group, artifact, version);
-            }
-            case Transport.GetFileResult.Error(Throwable e) -> {
-                LOG.log(
-                        Level.TRACE,
-                        () -> "Encountered error getting file for metadata. group=" + group +
-                                ", artifact=" + artifact +
-                                ", version=" + version +
-                                ", classifier=" + classifier +
-                                ", extension=" + extension +
-                                ", transport=" + this.transport,
-                        e
-                );
+        if (getFileResult instanceof Transport.GetFileResult.Success success) {
+            var inputStream = success.inputStream();
+            LOG.log(
+                    Level.TRACE,
+                    () -> "Successfully got file for artifact. group=" + group +
+                            ", artifact=" + artifact +
+                            ", version=" + version +
+                            ", classifier=" + classifier +
+                            ", extension=" + extension +
+                            ", transport=" + this.transport
+            );
+            return inputStream;
+        }
 
-                throw new RuntimeException(e);
-            }
-        };
+        else if (getFileResult instanceof Transport.GetFileResult.NotFound) {
+            LOG.log(
+                    Level.TRACE,
+                    () -> "Did not find file for artifact. group=" + group +
+                            ", artifact=" + artifact +
+                            ", version=" + version +
+                            ", classifier=" + classifier +
+                            ", extension=" + extension +
+                            ", transport=" + this.transport
+            );
+
+            throw new ArtifactNotFound(group, artifact, version);
+
+        }
+        else if (getFileResult instanceof Transport.GetFileResult.Error error) {
+            var e = error.throwable();
+            LOG.log(
+                    Level.TRACE,
+                    () -> "Encountered error getting file for metadata. group=" + group +
+                            ", artifact=" + artifact +
+                            ", version=" + version +
+                            ", classifier=" + classifier +
+                            ", extension=" + extension +
+                            ", transport=" + this.transport,
+                    e
+            );
+
+            throw new RuntimeException(e);
+        }
+        else {
+            throw new IllegalStateException();
+        }
     }
 
 
+    @PatternMatchHere
     InputStream getMetadata(Group group, Artifact artifact) {
         LOG.log(
                 Level.TRACE,
@@ -181,41 +190,47 @@ public final class MavenRepository {
                         ", transport=" + this.transport
         );
 
-        return switch (transport.getFile(
+        var getFileResult = transport.getFile(
                 getMetadataPath(group, artifact)
-        )) {
-            case Transport.GetFileResult.Success(InputStream inputStream, OptionalLong sizeHint) -> {
-                LOG.log(
-                        Level.TRACE,
-                        () -> "Successfully got file for metadata. group=" + group +
-                                ", artifact=" + artifact +
-                                ", transport=" + this.transport
-                );
+        );
 
-                yield inputStream;
-            }
-            case Transport.GetFileResult.NotFound __ -> {
-                LOG.log(
-                        Level.TRACE,
-                        () -> "Did not find file for metadata. group=" + group +
-                                ", artifact=" + artifact +
-                                ", transport=" + this.transport
-                );
+        if (getFileResult instanceof Transport.GetFileResult.Success success) {
+            var inputStream = success.inputStream();
+            LOG.log(
+                    Level.TRACE,
+                    () -> "Successfully got file for metadata. group=" + group +
+                            ", artifact=" + artifact +
+                            ", transport=" + this.transport
+            );
 
-                throw new ArtifactNotFound(group, artifact);
-            }
-            case Transport.GetFileResult.Error(Throwable e) -> {
-                LOG.log(
-                        Level.TRACE,
-                        () -> "Encountered error getting file for metadata. group=" + group +
-                                ", artifact=" + artifact +
-                                ", transport=" + this.transport,
-                        e
-                );
+            return inputStream;
+        }
 
-                throw new RuntimeException(e);
-            }
-        };
+        else if (getFileResult instanceof Transport.GetFileResult.NotFound) {
+            LOG.log(
+                    Level.TRACE,
+                    () -> "Did not find file for metadata. group=" + group +
+                            ", artifact=" + artifact +
+                            ", transport=" + this.transport
+            );
+
+            throw new ArtifactNotFound(group, artifact);
+        }
+        else if (getFileResult instanceof Transport.GetFileResult.Error error) {
+            var e = error.throwable();
+            LOG.log(
+                    Level.TRACE,
+                    () -> "Encountered error getting file for metadata. group=" + group +
+                            ", artifact=" + artifact +
+                            ", transport=" + this.transport,
+                    e
+            );
+
+            throw new RuntimeException(e);
+        }
+        else {
+            throw new IllegalStateException();
+        }
     }
 
     static List<String> getArtifactPath(

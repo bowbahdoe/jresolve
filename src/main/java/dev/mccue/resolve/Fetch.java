@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -45,11 +46,18 @@ public final class Fetch {
     private Fetch(Supplier<Resolution> resolutionSupplier, List<Dependency> dependencies, Cache cache) {
         this.resolutionSupplier = resolutionSupplier;
         this.dependencies = List.copyOf(dependencies);
-        this.executorService = Executors.newThreadPerTaskExecutor(
+        /*this.executorService = Executors.newThreadPerTaskExecutor(
                 Thread.ofVirtual()
                         .name("fetch-", 0)
                         .factory()
-        );
+        );*/
+        var count = new AtomicInteger();
+        this.executorService = Executors.newFixedThreadPool(8, (r) -> {
+            var t = new Thread(r);
+            t.setName("fetch-" + count.getAndIncrement());
+            t.setDaemon(true);
+            return t;
+        });
         this.cache = cache;
         this.includeLibraries = true;
         this.includeSources = false;
