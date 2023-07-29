@@ -307,7 +307,7 @@ public final class Exclusions {
             if (other instanceof ExcludeNone none) {
                 return none;
             }
-            else if (other instanceof ExcludeAll all) {
+            else if (other instanceof ExcludeAll) {
                 return this;
             }
             else if (other instanceof ExcludeSpecific excludeSpecific) {

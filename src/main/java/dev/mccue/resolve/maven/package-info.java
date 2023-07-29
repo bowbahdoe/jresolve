@@ -1,5 +1,5 @@
 /**
- *   POM (xml file)
+ * <pre>POM (xml file)
  *        |
  *        |   Parse XML
  *        V
@@ -24,6 +24,6 @@
  *        |
  *        |   Normalize snapshots and version ranges
  *        v
- *      PomManifest  [ type unchanged ]
+ *      PomManifest  [ type unchanged ]</pre>
  */
 package dev.mccue.resolve.maven;

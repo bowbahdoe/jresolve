@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ProfilesTest {
-    @Test
+    /*@Test
     @Disabled("Profiles not yet supported")
     public void testJDKActivation() throws IOException {
         var dir = Files.createTempDirectory("temp");
@@ -60,5 +60,5 @@ public class ProfilesTest {
         // org.nd4j:nd4j-native:0.5.0
 
         // somehow requires group=org.nd4j, artifact=oss-parent which does not exist
-    }
+    }*/
 }
