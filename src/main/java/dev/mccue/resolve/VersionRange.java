@@ -1,7 +1,5 @@
 package dev.mccue.resolve;
 
-import dev.mccue.resolve.Version;
-import dev.mccue.resolve.doc.PatternMatchHere;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -43,23 +41,22 @@ public record VersionRange(
         record Unbounded() implements Bound {}
     }
 
-    @PatternMatchHere
     public boolean includes(Version version) {
-        boolean startOk = true;
-        if (start instanceof Bound.Inclusive inclusive) {
-            startOk = version.compareTo(inclusive.version) >= 0;
-        }
-        else if (start instanceof Bound.Exclusive exclusive) {
-            startOk = version.compareTo(exclusive.version) > 0;
-        }
+        boolean startOk = switch (start) {
+            case Bound.Inclusive inclusive ->
+                version.compareTo(inclusive.version) >= 0;
+            case Bound.Exclusive exclusive ->
+                version.compareTo(exclusive.version) > 0;
+            case Bound.Unbounded() -> true;
+        };
 
-        boolean endOk = true;
-        if (end instanceof Bound.Inclusive inclusive) {
-            endOk = version.compareTo(inclusive.version) <= 0;
-        }
-        else if (end instanceof Bound.Exclusive exclusive) {
-            endOk = version.compareTo(exclusive.version) < 0;
-        }
+        boolean endOk = switch (end) {
+            case Bound.Inclusive inclusive ->
+                    version.compareTo(inclusive.version) <= 0;
+            case Bound.Exclusive exclusive ->
+                    version.compareTo(exclusive.version) < 0;
+            case Bound.Unbounded() -> true;
+        };
 
         return startOk && endOk;
     }

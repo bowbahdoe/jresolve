@@ -1,7 +1,6 @@
 package dev.mccue.resolve.maven;
 
 import dev.mccue.resolve.*;
-import dev.mccue.resolve.doc.PatternMatchHere;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -180,8 +179,6 @@ public final class MavenRepository {
         }
     }
 
-
-    @PatternMatchHere
     InputStream getMetadata(Group group, Artifact artifact) {
         LOG.log(
                 Level.TRACE,
@@ -194,42 +191,40 @@ public final class MavenRepository {
                 getMetadataPath(group, artifact)
         );
 
-        if (getFileResult instanceof Transport.GetFileResult.Success success) {
-            var inputStream = success.inputStream();
-            LOG.log(
-                    Level.TRACE,
-                    () -> "Successfully got file for metadata. group=" + group +
-                            ", artifact=" + artifact +
-                            ", transport=" + this.transport
-            );
+        switch (getFileResult) {
+            case Transport.GetFileResult.Success success -> {
+                var inputStream = success.inputStream();
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Successfully got file for metadata. group=" + group +
+                              ", artifact=" + artifact +
+                              ", transport=" + this.transport
+                );
 
-            return inputStream;
-        }
+                return inputStream;
+            }
+            case Transport.GetFileResult.NotFound __ -> {
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Did not find file for metadata. group=" + group +
+                              ", artifact=" + artifact +
+                              ", transport=" + this.transport
+                );
 
-        else if (getFileResult instanceof Transport.GetFileResult.NotFound) {
-            LOG.log(
-                    Level.TRACE,
-                    () -> "Did not find file for metadata. group=" + group +
-                            ", artifact=" + artifact +
-                            ", transport=" + this.transport
-            );
+                throw new ArtifactNotFound(group, artifact);
+            }
+            case Transport.GetFileResult.Error error -> {
+                var e = error.throwable();
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Encountered error getting file for metadata. group=" + group +
+                              ", artifact=" + artifact +
+                              ", transport=" + this.transport,
+                        e
+                );
 
-            throw new ArtifactNotFound(group, artifact);
-        }
-        else if (getFileResult instanceof Transport.GetFileResult.Error error) {
-            var e = error.throwable();
-            LOG.log(
-                    Level.TRACE,
-                    () -> "Encountered error getting file for metadata. group=" + group +
-                            ", artifact=" + artifact +
-                            ", transport=" + this.transport,
-                    e
-            );
-
-            throw new RuntimeException(e);
-        }
-        else {
-            throw new IllegalStateException();
+                throw new RuntimeException(e);
+            }
         }
     }
 

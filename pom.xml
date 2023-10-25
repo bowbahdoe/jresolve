@@ -6,17 +6,17 @@
 
     <groupId>dev.mccue</groupId>
     <artifactId>resolve</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <packaging>jar</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
     </properties>
 
     <name>resolve</name>
-    <description>com.google.common.hash repackaged and modularized</description>
+    <description>Dependency resolver for the JVM</description>
     <url>https://github.com/bowbahdoe/guava-hash</url>
 
     <developers>
