@@ -51,7 +51,7 @@ public final class Resolution {
     }
 
     /**
-     * @param initialDependencies  each dependency is defined as a lib (symbol) and coordinate (maven, git, local, etc)
+     * @param initialDependencies  each dependency is defined as a lib (symbol) and coordinate (maven, git, local, etc.)
      * @param overrideDependencies a map of lib to coord to use if lib is found
      * @param cache                cache for files.
      */

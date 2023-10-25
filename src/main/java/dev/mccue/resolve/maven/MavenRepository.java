@@ -131,51 +131,47 @@ public final class MavenRepository {
                 getArtifactPath(group, artifact, version, classifier, extension)
         );
 
-        if (getFileResult instanceof Transport.GetFileResult.Success success) {
-            var inputStream = success.inputStream();
-            LOG.log(
-                    Level.TRACE,
-                    () -> "Successfully got file for artifact. group=" + group +
-                            ", artifact=" + artifact +
-                            ", version=" + version +
-                            ", classifier=" + classifier +
-                            ", extension=" + extension +
-                            ", transport=" + this.transport
-            );
-            return inputStream;
-        }
-
-        else if (getFileResult instanceof Transport.GetFileResult.NotFound) {
-            LOG.log(
-                    Level.TRACE,
-                    () -> "Did not find file for artifact. group=" + group +
-                            ", artifact=" + artifact +
-                            ", version=" + version +
-                            ", classifier=" + classifier +
-                            ", extension=" + extension +
-                            ", transport=" + this.transport
-            );
-
-            throw new ArtifactNotFound(group, artifact, version);
-
-        }
-        else if (getFileResult instanceof Transport.GetFileResult.Error error) {
-            var e = error.throwable();
-            LOG.log(
-                    Level.TRACE,
-                    () -> "Encountered error getting file for metadata. group=" + group +
-                            ", artifact=" + artifact +
-                            ", version=" + version +
-                            ", classifier=" + classifier +
-                            ", extension=" + extension +
-                            ", transport=" + this.transport,
-                    e
-            );
-
-            throw new RuntimeException(e);
-        }
-        else {
-            throw new IllegalStateException();
+        switch (getFileResult) {
+            case Transport.GetFileResult.Success success -> {
+                var inputStream = success.inputStream();
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Successfully got file for artifact. group=" + group +
+                              ", artifact=" + artifact +
+                              ", version=" + version +
+                              ", classifier=" + classifier +
+                              ", extension=" + extension +
+                              ", transport=" + this.transport
+                );
+                return inputStream;
+            }
+            case Transport.GetFileResult.NotFound notFound -> {
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Did not find file for artifact. group=" + group +
+                              ", artifact=" + artifact +
+                              ", version=" + version +
+                              ", classifier=" + classifier +
+                              ", extension=" + extension +
+                              ", transport=" + this.transport
+                );
+                throw new ArtifactNotFound(group, artifact, version);
+            }
+            case Transport.GetFileResult.Error error -> {
+                var e = error.throwable();
+                LOG.log(
+                        Level.TRACE,
+                        () -> "Encountered error getting file for metadata. group=" + group +
+                              ", artifact=" + artifact +
+                              ", version=" + version +
+                              ", classifier=" + classifier +
+                              ", extension=" + extension +
+                              ", transport=" + this.transport,
+                        e
+                );
+                throw new RuntimeException(e);
+            }
+            case null, default -> throw new IllegalStateException();
         }
     }
 

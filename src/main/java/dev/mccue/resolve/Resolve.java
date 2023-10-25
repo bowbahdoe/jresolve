@@ -40,6 +40,11 @@ public final class Resolve {
         return this;
     }
 
+    public Resolve addDependencyOverride(Library library, Dependency dependency) {
+        this.dependencyOverrides.put(library, dependency);
+        return this;
+    }
+
     public Resolve addDependencyOverrides(List<Dependency> dependencies) {
         dependencies.forEach(this::addDependencyOverride);
         return this;

@@ -10,7 +10,7 @@ import java.util.Objects;
  *     These different variants will generally be put under their own classifiers,
  *     but a classifier is a maven-specific concept. So for the purposes of resolution
  *     we track the variant as part of the library. Libraries with multiple variants are treated
- *     as entirely distinct entities for during resolution.
+ *     as entirely distinct entities during resolution.
  * </p>
  * @param value
  */

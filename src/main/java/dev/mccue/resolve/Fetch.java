@@ -46,11 +46,6 @@ public final class Fetch {
     private Fetch(Supplier<Resolution> resolutionSupplier, List<Dependency> dependencies, Cache cache) {
         this.resolutionSupplier = resolutionSupplier;
         this.dependencies = List.copyOf(dependencies);
-        /*this.executorService = Executors.newThreadPerTaskExecutor(
-                Thread.ofVirtual()
-                        .name("fetch-", 0)
-                        .factory()
-        );*/
         var count = new AtomicInteger();
         this.executorService = Executors.newFixedThreadPool(8, (r) -> {
             var t = new Thread(r);
