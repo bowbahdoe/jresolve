@@ -176,7 +176,7 @@ record EffectivePomInfo(
 
     private static final Pattern MAVEN_PROPERTY = Pattern.compile("\\$\\{([^<>{}]+)}");
 
-    @Rife("")
+    @Rife
     static String resolveProperties(Map<String, String> properties, String data) {
         if (data == null) {
             return null;

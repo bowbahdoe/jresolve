@@ -37,9 +37,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git://github.com/bowbahdoe/guava-hash.git</connection>
-        <developerConnection>scm:git:ssh://github.com:bowbahdoe/guava-hash.git</developerConnection>
-        <url>http://github.com/bowbahdoe/guava-hash/tree/main</url>
+        <connection>scm:git:git://github.com/bowbahdoe/jresolve.git</connection>
+        <developerConnection>scm:git:ssh://github.com:bowbahdoe/jresolve.git</developerConnection>
+        <url>http://github.com/bowbahdoe/jresolve/tree/main</url>
     </scm>
 
     <dependencies>
@@ -98,7 +98,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <release>17</release>
+                    <release>21</release>
                     <compilerArgs>
                         <arg>-Xlint:all</arg>
                     </compilerArgs>

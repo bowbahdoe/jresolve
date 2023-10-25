@@ -19,10 +19,4 @@ public @interface Coursier {
      * link to a particular hash instead of 'master' or 'main'.
      */
     String value();
-
-    /**
-     * @return Relevant details about what was taken from the
-     * answer.
-     */
-    String details() default "";
 }
