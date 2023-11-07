@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 @NullMarked
 public final class Fetch {
-    private final Supplier<? extends @Nullable Resolution> resolutionSupplier;
+    private final Supplier<? extends Resolve.@Nullable Result> resolutionSupplier;
     private final List<Dependency> dependencies;
     private @Nullable Cache cache;
     private boolean includeLibraries;
@@ -31,8 +31,8 @@ public final class Fetch {
         this(resolve::run, List.of(), resolve.cache);
     }
 
-    public Fetch(Resolution resolution) {
-        this(() -> resolution, List.of(), Cache.standard());
+    public Fetch(Resolve.Result result) {
+        this(() -> result, List.of(), Cache.standard());
     }
 
     /**
@@ -43,7 +43,7 @@ public final class Fetch {
         this(() -> null, dependencies, Cache.standard());
     }
 
-    private Fetch(Supplier<Resolution> resolutionSupplier, List<Dependency> dependencies, Cache cache) {
+    private Fetch(Supplier<Resolve.Result> resolutionSupplier, List<Dependency> dependencies, Cache cache) {
         this.resolutionSupplier = resolutionSupplier;
         this.dependencies = List.copyOf(dependencies);
         var count = new AtomicInteger();

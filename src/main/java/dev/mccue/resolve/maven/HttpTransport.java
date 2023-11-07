@@ -84,7 +84,9 @@ public final class HttpTransport implements Transport {
                 if (response.statusCode() == 404) {
                     return new GetFileResult.NotFound();
                 }
-                new GetFileResult.Error(new IOException("Bad status code: statusCode=" + response.statusCode()));
+                else {
+                    return new GetFileResult.Error(new IOException("Bad status code: statusCode=" + response.statusCode()));
+                }
             }
 
             var sizeHint = new OptionalLong[] { OptionalLong.empty() };

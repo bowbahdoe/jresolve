@@ -6,6 +6,9 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * A set of {@link Exclusion}s, optimized for memory use.
+ */
 @Coursier("https://github.com/coursier/coursier/blob/f5f0870/modules/core/shared/src/main/scala/coursier/core/MinimizedExclusions.scala")
 public final class Exclusions {
     public static final Exclusions NONE = new Exclusions(ExcludeNone.INSTANCE);
