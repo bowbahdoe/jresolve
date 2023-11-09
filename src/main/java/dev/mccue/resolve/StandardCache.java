@@ -185,7 +185,7 @@ final class StandardCache implements Cache {
                         var inputStream = data.get();
                         var outputStream = Files.newOutputStream(
                              filePath,
-                             StandardOpenOption.WRITE
+                             StandardOpenOption.CREATE_NEW
                         )
                 ) {
                     LOG.log(Level.TRACE, () -> "Transferring contents to file. filePath=" + filePath);
