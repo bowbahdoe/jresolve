@@ -6,7 +6,7 @@
 
 [maven-resolver](https://github.com/apache/maven-resolver) is understandably very maven focused.
 Dependencies have to come from maven repositories, resolution is affected by global 
-configuration like `settings.xml`, and [repositories are all checked for all dependencies](https://blog.ltgt.net/maven-is-broken-by-design/).
+configuration like `settings.xml`
 
 This is also true for [Shrinkwrap Resolver](https://github.com/shrinkwrap/resolver) which is built on
 [maven-resolver](https://github.com/apache/maven-resolver). 
