@@ -36,8 +36,8 @@ public final class Fetch {
     }
 
     /**
-     * An explicit list of dependencies to fetch. Their manifests
-     * @param dependencies
+     * An explicit list of dependencies to fetch. Their manifests are ignored.
+     * @param dependencies The list of deps.
      */
     public Fetch(List<Dependency> dependencies) {
         this(() -> null, dependencies, Cache.standard());

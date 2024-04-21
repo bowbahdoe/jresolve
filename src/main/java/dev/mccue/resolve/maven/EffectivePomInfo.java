@@ -5,6 +5,7 @@ import dev.mccue.resolve.Library;
 import dev.mccue.resolve.doc.Rife;
 import org.jspecify.annotations.NullMarked;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,12 +127,14 @@ record EffectivePomInfo(
                                         cache
                                 ), jdkVersion, os)
                                 .resolveImports(repository, cache, jdkVersion, os);
+                        // Properties in declared POM take precedence over those in the BOM.
                         effectiveBom.properties.forEach((k, v) -> {
                             if (!props.containsKey(k)) {
                                 props.put(k, v);
                             }
                         });
-                        props.putAll(effectiveBom.properties);
+
+
                         effectiveBom.dependencyManagement.forEach(addDep);
                     }
                 })
