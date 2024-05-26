@@ -114,12 +114,14 @@ record EffectivePomInfo(
 
     EffectivePomInfo resolveImports(MavenRepository repository, Cache cache, Runtime.Version jdkVersion, Os os) {
         var props = new LinkedHashMap<>(properties);
+
         var dependencyManagementWithImportsFlattened = this.dependencyManagement.stream()
                 .mapMulti((PomDependency dependency, Consumer<PomDependency> addDep) -> {
                     if (!dependency.scope().orElse(Scope.COMPILE).equals(Scope.IMPORT)) {
                         addDep.accept(dependency);
                     }
                     else {
+                        dependency = dependency.map(s -> resolveProperties(props, s));
                         var effectiveBom = EffectivePomInfo.from(repository.getAllPoms(
                                         dependency.groupId().orElseThrow(),
                                         dependency.artifactId().orElseThrow(),
@@ -127,6 +129,7 @@ record EffectivePomInfo(
                                         cache
                                 ), jdkVersion, os)
                                 .resolveImports(repository, cache, jdkVersion, os);
+
                         // Properties in declared POM take precedence over those in the BOM.
                         effectiveBom.properties.forEach((k, v) -> {
                             if (!props.containsKey(k)) {
@@ -134,11 +137,11 @@ record EffectivePomInfo(
                             }
                         });
 
-
                         effectiveBom.dependencyManagement.forEach(addDep);
                     }
                 })
                 .toList();
+
         return new EffectivePomInfo(
                 groupId,
                 artifactId,
@@ -155,6 +158,7 @@ record EffectivePomInfo(
                 props
         );
     }
+
     /*
     This is because the minimal set of information for matching a dependency reference against a dependencyManagement section is actually {groupId, artifactId, type, classifier}.
     https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html
