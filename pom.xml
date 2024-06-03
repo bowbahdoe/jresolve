@@ -17,7 +17,7 @@
 
     <name>resolve</name>
     <description>Dependency resolver for the JVM</description>
-    <url>https://github.com/bowbahdoe/guava-hash</url>
+    <url>https://github.com/bowbahdoe/jresolve</url>
 
     <developers>
         <developer>
