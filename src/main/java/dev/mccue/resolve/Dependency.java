@@ -21,10 +21,12 @@ public record Dependency(
         this(library, coordinate, Exclusions.NONE);
     }
 
+    @Deprecated(forRemoval = true)
     public static Dependency maven(String coordinate, MavenRepository repository) {
         return maven(coordinate, List.of(repository));
     }
 
+    @Deprecated(forRemoval = true)
     public static Dependency maven(String coordinateString, List<MavenRepository> repositories) {
         var parts = coordinateString.split(":");
         if (parts.length != 3 || parts[0].isBlank() || parts[1].isBlank() || parts[2].isBlank()) {
@@ -41,6 +43,7 @@ public record Dependency(
                 )
         );
     }
+
 
     public static Dependency maven(
             Group group,
@@ -59,8 +62,60 @@ public record Dependency(
         );
     }
 
+    public static Dependency maven(
+            Group group,
+            Artifact artifact,
+            Version version,
+            MavenRepository repository
+    ) {
+        return maven(group, artifact, version, List.of(repository));
+    }
+
+    public static Dependency maven(
+            String group,
+            String artifact,
+            String version,
+            List<MavenRepository> repositories
+    ) {
+        return maven(
+                new Group(group),
+                new Artifact(artifact),
+                new Version(version),
+                repositories
+        );
+    }
+
+    public static Dependency maven(
+            String group,
+            String artifact,
+            String version,
+            MavenRepository repository
+    ) {
+        return maven(group, artifact, version, List.of(repository));
+    }
+
+    @Deprecated(forRemoval = true)
     public static Dependency mavenCentral(String coordinate) {
         return maven(coordinate, MavenRepository.central());
+    }
+
+
+    public static Dependency mavenCentral(Group group, Artifact artifact, Version version) {
+        return maven(
+                group,
+                artifact,
+                version,
+                List.of(MavenRepository.central())
+        );
+    }
+
+    public static Dependency mavenCentral(String group, String artifact, String version) {
+        return maven(
+                new Group(group),
+                new Artifact(artifact),
+                new Version(version),
+                List.of(MavenRepository.central())
+        );
     }
 
     public Dependency withExclusions(Exclusions exclusions) {
