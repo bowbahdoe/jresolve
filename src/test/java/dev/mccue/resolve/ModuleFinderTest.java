@@ -1,5 +1,6 @@
 package dev.mccue.resolve;
 
+import dev.mccue.purl.PackageUrl;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -18,7 +19,7 @@ public class ModuleFinderTest {
         var tempDir = Files.createTempDirectory("temp");
         var result = new Resolve()
                 .withCache(Cache.standard(tempDir))
-                .addDependency(Dependency.mavenCentral("dev.mccue:json:0.2.3"))
+                .addDependency(Dependency.fromPackageUrl(PackageUrl.parse("pkg:maven/dev.mccue/json@0.2.3")))
                 .fetch()
                 .run();
 
@@ -45,7 +46,7 @@ public class ModuleFinderTest {
         var tempDir = Files.createTempDirectory("temp");
         var result = new Resolve()
                 .withCache(Cache.standard(tempDir))
-                .addDependency(Dependency.mavenCentral("com.fasterxml.jackson.core:jackson-core:2.15.0"))
+                .addDependency(Dependency.fromPackageUrl(PackageUrl.parse("pkg:maven/com.fasterxml.jackson.core/jackson-core@2.15.0")))
                 .fetch()
                 .run();
 
@@ -76,7 +77,7 @@ public class ModuleFinderTest {
         var tempDir = Files.createTempDirectory("temp");
         var resolution = new Resolve()
                 .withCache(Cache.standard(tempDir))
-                .addDependency(Dependency.mavenCentral("com.fasterxml.jackson.core:jackson-databind:2.15.0"))
+                .addDependency(Dependency.fromPackageUrl(PackageUrl.parse("pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.15.0")))
                 .run();
 
         var result = new Fetch(resolution)

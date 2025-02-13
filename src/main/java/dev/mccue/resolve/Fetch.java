@@ -102,13 +102,16 @@ public final class Fetch {
         }
         selectedDependencies.addAll(this.dependencies);
 
-        var futurePaths = new HashMap<Library, Future<Path>>();
+        var futureFetchedLibraries = new HashMap<Library, Future<FetchedLibrary>>();
         if (this.includeLibraries) {
             selectedDependencies.forEach(dependency -> {
-                futurePaths.put(
+                futureFetchedLibraries.put(
                         dependency.library(),
                         this.executorService.submit(() ->
-                                dependency.coordinate().getLibraryLocation(this.cache)
+                                new FetchedLibrary(
+                                        dependency.coordinate().getLibraryLocation(this.cache),
+                                        dependency.usages()
+                                )
                         )
                 );
             });
@@ -140,8 +143,8 @@ public final class Fetch {
         }
 
 
-        var libraries = new HashMap<Library, Path>();
-        futurePaths.forEach((k, v) -> {
+        var libraries = new HashMap<Library, FetchedLibrary>();
+        futureFetchedLibraries.forEach((k, v) -> {
             try {
                 libraries.put(k, v.get());
             } catch (InterruptedException | ExecutionException e) {
@@ -176,19 +179,38 @@ public final class Fetch {
     }
 
     public record Result(
-            Map<Library, Path> libraries,
+            Map<Library, FetchedLibrary> fetchedLibraries,
             Map<Library, Path> sources,
             Map<Library, Path> documentation
     ) {
         public Result {
-            Objects.requireNonNull(libraries);
+            Objects.requireNonNull(fetchedLibraries);
             Objects.requireNonNull(sources);
             Objects.requireNonNull(documentation);
         }
 
+        public Map<Library, Path> libraries() {
+            return fetchedLibraries.entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> entry.getValue().path()
+                    ));
+        }
+
+        public String path(Usage usage, List<Path> extraPaths) {
+            return Stream.concat(
+                    fetchedLibraries.values().stream()
+                            .filter(fetchedLibrary -> fetchedLibrary.usages().contains(usage))
+                            .map(FetchedLibrary::path)
+                            .map(Path::toString),
+                    extraPaths.stream().map(Path::toString)
+            ).collect(Collectors.joining(File.pathSeparator));
+        }
+
         public String path(List<Path> extraPaths) {
             return Stream.concat(
-                    libraries.values().stream().map(Path::toString),
+                    libraries().values().stream().map(Path::toString),
                     extraPaths.stream().map(Path::toString)
             ).collect(Collectors.joining(File.pathSeparator));
         }
@@ -220,7 +242,7 @@ public final class Fetch {
         ) {
             return new Paths(
                     Stream.concat(
-                                    libraries.entrySet()
+                                    libraries().entrySet()
                                             .stream()
                                             .filter(entry -> !shouldGoOnClassPath.test(entry.getKey()))
                                             .map(Map.Entry::getValue)
@@ -230,7 +252,7 @@ public final class Fetch {
                             .collect(Collectors.joining(File.pathSeparator)),
 
                     Stream.concat(
-                                libraries.entrySet()
+                                libraries().entrySet()
                                     .stream()
                                     .filter(entry -> shouldGoOnClassPath.test(entry.getKey()))
                                     .map(Map.Entry::getValue)
@@ -242,7 +264,7 @@ public final class Fetch {
         }
 
         public ModuleFinder moduleFinder() {
-            return ModuleFinder.of(libraries.values().toArray(Path[]::new));
+            return ModuleFinder.of(libraries().values().toArray(Path[]::new));
         }
     }
 }

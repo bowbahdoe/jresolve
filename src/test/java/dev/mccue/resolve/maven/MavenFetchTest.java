@@ -14,7 +14,11 @@ public class MavenFetchTest {
     @Test
     public void fetchIntoStandardCache() throws IOException {
         var temp = Files.createTempDirectory("temp");
-        var clojure = Dependency.mavenCentral("org.clojure:clojure:1.11.0");
+        var clojure = Dependency.mavenCentral(
+                new Group("org.clojure"),
+                new Artifact("clojure"),
+                new Version("1.11.0")
+        );
 
         var libraries = new Resolve()
                 .addDependency(clojure)
@@ -69,7 +73,11 @@ public class MavenFetchTest {
     @Test
     public void fetchSources() throws IOException {
         var temp = Files.createTempDirectory("temp");
-        var json = Dependency.mavenCentral("dev.mccue:json:0.2.3");
+        var json = Dependency.mavenCentral(
+                new Group("dev.mccue"),
+                new Artifact("json"),
+                new Version("0.2.3")
+        );
 
         var result = new Resolve()
                 .addDependency(json)
@@ -105,7 +113,11 @@ public class MavenFetchTest {
     public void dontFetchAnything() throws IOException {
         var temp = Files.createTempDirectory("temp");
 
-        var clojure = Dependency.mavenCentral("org.clojure:clojure:1.11.0");
+        var clojure = Dependency.mavenCentral(
+                new Group("org.clojure"),
+                new Artifact("clojure"),
+                new Version("1.11.0")
+        );
 
         var result = new Resolve()
                 .addDependency(clojure)
@@ -121,7 +133,11 @@ public class MavenFetchTest {
     public void onlyFetchSources() throws IOException {
         var temp = Files.createTempDirectory("temp");
 
-        var clojure = Dependency.mavenCentral("dev.mccue:json:0.2.3");
+        var clojure = Dependency.mavenCentral(
+                new Group("dev.mccue"),
+                new Artifact("json"),
+                new Version("0.2.3")
+        );
 
         var result = new Resolve()
                 .addDependency(clojure)
@@ -151,7 +167,11 @@ public class MavenFetchTest {
     public void onlyFetchDocumentation() throws IOException {
         var temp = Files.createTempDirectory("temp");
 
-        var clojure = Dependency.mavenCentral("dev.mccue:json:0.2.3");
+        var clojure = Dependency.mavenCentral(
+                new Group("dev.mccue"),
+                new Artifact("json"),
+                new Version("0.2.3")
+        );
 
         var result = new Resolve()
                 .addDependency(clojure)
@@ -181,7 +201,11 @@ public class MavenFetchTest {
     public void onlyFetchSourcesAndDocumentation() throws IOException {
         var temp = Files.createTempDirectory("temp");
 
-        var clojure = Dependency.mavenCentral("dev.mccue:json:0.2.3");
+        var clojure = Dependency.mavenCentral(
+                new Group("dev.mccue"),
+                new Artifact("json"),
+                new Version("0.2.3")
+        );
 
         var result = new Resolve()
                 .addDependency(clojure)

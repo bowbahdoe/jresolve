@@ -1,5 +1,6 @@
 package dev.mccue.resolve.maven;
 
+import dev.mccue.purl.PackageUrl;
 import dev.mccue.resolve.*;
 import org.junit.jupiter.api.Test;
 
@@ -14,8 +15,16 @@ public class DependencyOverrideTest {
     public void testTopLevelOverride() throws IOException {
         var tempDir = Files.createTempDirectory("temp");
         var resolution = new Resolve()
-                .addDependency(Dependency.mavenCentral("org.clojure:clojure:1.11.0"))
-                .addDependencyOverride(Dependency.mavenCentral("org.clojure:clojure:1.10.0"))
+                .addDependency(Dependency.mavenCentral(
+                        new Group("org.clojure"),
+                        new Artifact("clojure"),
+                        new Version("1.11.0")
+                ))
+                .addDependencyOverride(Dependency.mavenCentral(
+                        new Group("org.clojure"),
+                        new Artifact("clojure"),
+                        new Version("1.10.0")
+                ))
                 .withCache(Cache.standard(tempDir))
                 .run();
 
@@ -28,7 +37,11 @@ public class DependencyOverrideTest {
                                         new Library(new Group("org.clojure"), new Artifact("clojure"))
                                 ))
                         .toList(),
-                List.of(Dependency.mavenCentral("org.clojure:clojure:1.10.0"))
+                List.of(Dependency.mavenCentral(
+                        new Group("org.clojure"),
+                        new Artifact("clojure"),
+                        new Version("1.10.0")
+                ))
         );
     }
 
@@ -36,8 +49,16 @@ public class DependencyOverrideTest {
     public void testSecondLevelOverride() throws IOException {
         var tempDir = Files.createTempDirectory("temp");
         var resolution = new Resolve()
-                .addDependency(Dependency.mavenCentral("org.clojure:clojure:1.11.0"))
-                .addDependencyOverride(Dependency.mavenCentral("org.clojure:spec.alpha:0.3.214"))
+                .addDependency(Dependency.mavenCentral(
+                        new Group("org.clojure"),
+                        new Artifact("clojure"),
+                        new Version("1.11.0")
+                ))
+                .addDependencyOverride(Dependency.mavenCentral(
+                        new Group("org.clojure"),
+                        new Artifact("spec.alpha"),
+                        new Version("0.3.214")
+                ))
                 .withCache(Cache.standard(tempDir))
                 .run();
 
@@ -50,7 +71,11 @@ public class DependencyOverrideTest {
                                         new Library(new Group("org.clojure"), new Artifact("spec.alpha"))
                                 ))
                         .toList(),
-                List.of(Dependency.mavenCentral("org.clojure:spec.alpha:0.3.214"))
+                List.of(Dependency.mavenCentral(
+                        new Group("org.clojure"),
+                        new Artifact("spec.alpha"),
+                        new Version("0.3.214")
+                ))
         );
     }
 }

@@ -1,5 +1,6 @@
 package dev.mccue.resolve.maven;
 
+import dev.mccue.purl.PackageUrl;
 import dev.mccue.resolve.Cache;
 import dev.mccue.resolve.Dependency;
 import dev.mccue.resolve.Resolve;
@@ -19,12 +20,12 @@ public class NoCacheTest {
         var tempDir = Files.createTempDirectory("temp");
 
         var resolution1 = new Resolve()
-                .addDependency(Dependency.mavenCentral("org.clojure:clojure:1.11.0"))
+                .addDependency(Dependency.fromPackageUrl(PackageUrl.parse("pkg:maven/org.clojure/clojure@1.11.0")))
                 .withCache(Cache.standard(tempDir))
                 .run();
 
         var resolution2 = new Resolve()
-                .addDependency(Dependency.mavenCentral("org.clojure:clojure:1.11.0"))
+                .addDependency(Dependency.fromPackageUrl(PackageUrl.parse("pkg:maven/org.clojure/clojure@1.11.0")))
                 .withCache(null)
                 .run();
 

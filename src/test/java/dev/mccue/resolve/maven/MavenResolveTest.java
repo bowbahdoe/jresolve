@@ -1,5 +1,6 @@
 package dev.mccue.resolve.maven;
 
+import dev.mccue.purl.PackageUrl;
 import dev.mccue.resolve.*;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class MavenResolveTest {
     @Test
     public void testGetCompileTransitiveDependenciesJetty() throws IOException {
-        var jetty = Dependency.mavenCentral("org.eclipse.jetty:jetty-server:11.0.14");
+        var jetty = Dependency.fromPackageUrl(PackageUrl.parse("pkg:maven/org.eclipse.jetty/jetty-server@11.0.14"));
 
         var dependencies = new Resolve()
                 .addDependency(jetty)
@@ -120,8 +121,8 @@ public class MavenResolveTest {
         var clojars = MavenRepository.remote("https://repo.clojars.org");
 
         var resolution = new Resolve()
-                .addDependency(Dependency.mavenCentral("org.clojure:clojure:1.11.0"))
-                .addDependency(Dependency.maven("ring:ring:1.9.2", List.of(clojars, MavenRepository.central())))
+                .addDependency(Dependency.fromPackageUrl(PackageUrl.parse("pkg:maven/org.clojure/clojure@1.11.0")))
+                .addDependency(Dependency.maven(new Group("ring"), new Artifact("ring"), new Version("1.9.2"), List.of(clojars, MavenRepository.central())))
                 .withCache(Cache.standard(tempDir))
                 .run();
 
@@ -321,7 +322,7 @@ public class MavenResolveTest {
     public void resolveJackson() {
         var resolution = new Resolve()
                 .addDependency(
-                        Dependency.mavenCentral("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+                        Dependency.mavenCentral(new Group("com.fasterxml.jackson.core"), new Artifact("jackson-databind"), new Version("2.15.2"))
                 )
                 .run();
 
@@ -342,7 +343,7 @@ public class MavenResolveTest {
     public void resolveJacksonNoTransitive() {
         var resolution = new Resolve()
                 .addDependency(
-                        Dependency.mavenCentral("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+                        Dependency.mavenCentral(new Group("com.fasterxml.jackson.core"), new Artifact("jackson-databind"), new Version("2.15.2"))
                                 .withExclusions(Exclusions.of(Exclusion.ALL))
                 )
                 .run();
@@ -362,7 +363,11 @@ public class MavenResolveTest {
     public void resolveJacksonNoAnnotations() {
         var resolution = new Resolve()
                 .addDependency(
-                        Dependency.mavenCentral("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+                        Dependency.mavenCentral(
+                                        new Group("com.fasterxml.jackson.core"),
+                                        new Artifact("jackson-databind"),
+                                        new Version("2.15.2")
+                                )
                                 .withExclusions(Exclusions.of(
                                         new Exclusion(
                                                 new Group("com.fasterxml.jackson.core"),

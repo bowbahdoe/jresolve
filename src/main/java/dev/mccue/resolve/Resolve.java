@@ -145,7 +145,7 @@ public final class Resolve {
             initialDependencies.forEach((library, dependency) -> {
                 q.add(
                         new QueueEntry(
-                                new Dependency(library, dependency.coordinate(), dependency.exclusions()),
+                                new Dependency(library, dependency.coordinate(), dependency.exclusions(), dependency.usages()),
                                 new LL.Nil<>(),
                                 executorService.submit(() -> dependency.coordinate().getManifest(cache))
                         )
