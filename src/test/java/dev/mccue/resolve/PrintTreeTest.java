@@ -13,6 +13,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -25,10 +27,14 @@ public class PrintTreeTest {
         new Resolve()
 
                 .addDependency(Dependency.mavenCentral(
-                        "org.clojure:clojure:1.11.0"
+                        new Group("org.clojure"),
+                        new Artifact("clojure"),
+                        new Version("1.11.0")
                 ))
                 .addDependency(Dependency.maven(
-                        "ring:ring:1.9.3",
+                        new Group("ring"),
+                        new Artifact("ring"),
+                        new Version("1.9.3"),
                         List.of(
                                 MavenRepository.remote("https://repo.clojars.org"),
                                 MavenRepository.central()
@@ -40,10 +46,14 @@ public class PrintTreeTest {
         new Resolve()
 
                 .addDependency(Dependency.mavenCentral(
-                        "org.clojure:clojure:1.11.0"
+                        new Group("org.clojure"),
+                        new Artifact("clojure"),
+                        new Version("1.11.0")
                 ))
                 .addDependency(Dependency.maven(
-                        "ring:ring:1.9.3",
+                        new Group("ring"),
+                        new Artifact("ring"),
+                        new Version("1.9.3"),
                         List.of(
                                 MavenRepository.remote("https://repo.clojars.org"),
                                 MavenRepository.central()
@@ -101,35 +111,44 @@ public class PrintTreeTest {
         
         var baos = new ByteArrayOutputStream();
 
+        BiFunction<String, List<MavenRepository>, Dependency> parse = (s, r) -> {
+            var split = s.split(":");
+            return Dependency.maven(
+                    new Group(split[0]),
+                    new Artifact(split[1]),
+                    new Version(split[2]),
+                    r
+            );
+        };
 
         var resolution = new Resolve()
-                .addDependency(Dependency.maven("org.clojure:clojure:1.11.0", repos))
-                .addDependency(Dependency.maven("info.sunng:ring-jetty9-adapter:0.18.3", repos))
-                .addDependency(Dependency.maven("hiccup:hiccup:2.0.0-alpha2", repos))
-                .addDependency(Dependency.maven("metosin:reitit:0.5.18", repos))
-                .addDependency(Dependency.maven("ring:ring-anti-forgery:1.3.0", repos))
-                .addDependency(Dependency.maven("cheshire:cheshire:5.11.0", repos))
-                .addDependency(Dependency.maven("com.github.seancorfield:next.jdbc:1.3.847", repos))
-                .addDependency(Dependency.maven("com.github.seancorfield:honeysql:2.4.980", repos))
-                .addDependency(Dependency.maven("metosin:malli:0.10.1", repos))
-                .addDependency(Dependency.maven("org.postgresql:postgresql:42.5.4", repos))
-                .addDependency(Dependency.maven("org.togglz:togglz-core:3.3.3", repos))
-                .addDependency(Dependency.maven("msolli:proletarian:1.0.68-alpha", repos))
-                .addDependency(Dependency.maven("ring:ring-defaults:0.3.4", repos))
-                .addDependency(Dependency.maven("metosin:muuntaja:0.6.8", repos))
-                .addDependency(Dependency.maven("org.slf4j:slf4j-simple:2.0.7", repos))
-                .addDependency(Dependency.maven("net.ttddyy:datasource-proxy:1.8", repos))
-                .addDependency(Dependency.maven("com.widdindustries:cljc.java-time:0.1.21", repos))
-                .addDependency(Dependency.maven("json-html:json-html:0.4.7", repos))
-                .addDependency(Dependency.maven("com.github.steffan-westcott:clj-otel-api:0.1.5", repos))
-                .addDependency(Dependency.maven("org.joda:joda-money:1.0.3", repos))
-                .addDependency(Dependency.maven("buddy:buddy-auth:3.0.323", repos))
-                .addDependency(Dependency.maven("buddy:buddy-hashers:1.8.158", repos))
-                .addDependency(Dependency.maven("clj-http:clj-http:3.12.3", repos))
-                .addDependency(Dependency.maven("com.zaxxer:HikariCP:5.0.1", repos))
-                .addDependency(Dependency.maven("resilience4clj:resilience4clj-retry:0.1.1", repos))
-                .addDependency(Dependency.maven("dev.weavejester:medley:1.7.0", repos))
-                .addDependency(Dependency.maven("com.auth0:auth0:2.1.0", repos))
+                .addDependency(parse.apply("org.clojure:clojure:1.11.0", repos))
+                .addDependency(parse.apply("info.sunng:ring-jetty9-adapter:0.18.3", repos))
+                .addDependency(parse.apply("hiccup:hiccup:2.0.0-alpha2", repos))
+                .addDependency(parse.apply("metosin:reitit:0.5.18", repos))
+                .addDependency(parse.apply("ring:ring-anti-forgery:1.3.0", repos))
+                .addDependency(parse.apply("cheshire:cheshire:5.11.0", repos))
+                .addDependency(parse.apply("com.github.seancorfield:next.jdbc:1.3.847", repos))
+                .addDependency(parse.apply("com.github.seancorfield:honeysql:2.4.980", repos))
+                .addDependency(parse.apply("metosin:malli:0.10.1", repos))
+                .addDependency(parse.apply("org.postgresql:postgresql:42.5.4", repos))
+                .addDependency(parse.apply("org.togglz:togglz-core:3.3.3", repos))
+                .addDependency(parse.apply("msolli:proletarian:1.0.68-alpha", repos))
+                .addDependency(parse.apply("ring:ring-defaults:0.3.4", repos))
+                .addDependency(parse.apply("metosin:muuntaja:0.6.8", repos))
+                .addDependency(parse.apply("org.slf4j:slf4j-simple:2.0.7", repos))
+                .addDependency(parse.apply("net.ttddyy:datasource-proxy:1.8", repos))
+                .addDependency(parse.apply("com.widdindustries:cljc.java-time:0.1.21", repos))
+                .addDependency(parse.apply("json-html:json-html:0.4.7", repos))
+                .addDependency(parse.apply("com.github.steffan-westcott:clj-otel-api:0.1.5", repos))
+                .addDependency(parse.apply("org.joda:joda-money:1.0.3", repos))
+                .addDependency(parse.apply("buddy:buddy-auth:3.0.323", repos))
+                .addDependency(parse.apply("buddy:buddy-hashers:1.8.158", repos))
+                .addDependency(parse.apply("clj-http:clj-http:3.12.3", repos))
+                .addDependency(parse.apply("com.zaxxer:HikariCP:5.0.1", repos))
+                .addDependency(parse.apply("resilience4clj:resilience4clj-retry:0.1.1", repos))
+                .addDependency(parse.apply("dev.weavejester:medley:1.7.0", repos))
+                .addDependency(parse.apply("com.auth0:auth0:2.1.0", repos))
                 .withCache(Cache.standard(tempDir))
                 //.withExecutorService(Executors.newFixedThreadPool(50))
                 .run();

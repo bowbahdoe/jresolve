@@ -12,7 +12,7 @@ public class HardlinkTest {
     public void createHardlinks() throws IOException {
         var resolved = new Resolve()
                 .addDependencies(List.of(
-                        Dependency.mavenCentral("dev.mccue:json:0.2.3")
+                        Dependency.mavenCentral(new Group("dev.mccue"), new Artifact("json"), new Version("0.2.3"))
                 ))
                 .fetch()
                 .run();

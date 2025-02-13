@@ -18,7 +18,8 @@ record PomManifest(
                 .map(dependency -> new Dependency(
                         dependency.library(),
                         dependency.coordinate().normalize(dependency.library(), cache),
-                        dependency.exclusions()
+                        dependency.exclusions(),
+                        dependency.usages()
                 ))
                 .toList());
     }

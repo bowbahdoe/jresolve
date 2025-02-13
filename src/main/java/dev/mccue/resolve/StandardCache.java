@@ -129,8 +129,7 @@ final class StandardCache implements Cache {
                 try(FileChannel channel = FileChannel.open(
                         lockFile,
                         StandardOpenOption.CREATE,
-                        StandardOpenOption.WRITE,
-                        StandardOpenOption.DELETE_ON_CLOSE
+                        StandardOpenOption.WRITE
                 )) {
                     FileLock lock = null;
                     try {
@@ -147,6 +146,9 @@ final class StandardCache implements Cache {
                     finally {
                         if (lock != null) lock.release();
                     }
+                } finally {
+                    // https://github.com/bowbahdoe/jresolve/issues/5
+                    Files.deleteIfExists(lockFile);
                 }
             }
         } catch (IOException e) {
