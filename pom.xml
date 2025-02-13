@@ -6,7 +6,7 @@
 
     <groupId>dev.mccue</groupId>
     <artifactId>resolve</artifactId>
-    <version>2024.10.21</version>
+    <version>2025.02.12</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -48,6 +48,12 @@
             <artifactId>jspecify</artifactId>
             <version>1.0.0</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.mccue</groupId>
+            <artifactId>purl</artifactId>
+            <version>2023.11.07</version>
         </dependency>
 
         <dependency>
