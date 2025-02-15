@@ -114,6 +114,7 @@ public final class Resolve {
                     usageToLibrary.putIfAbsent(usage, new LinkedHashSet<>());
                     usageToLibrary.get(usage).add(library);
 
+                    libraryGraph.addNode(library);
                     var successors = Graphs.reachableNodes(libraryGraph, library);
                     for (var successor : successors) {
                         usageToLibrary.get(usage).add(successor);
