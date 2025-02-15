@@ -102,16 +102,13 @@ public final class Fetch {
         }
         selectedDependencies.addAll(this.dependencies);
 
-        var futureFetchedLibraries = new HashMap<Library, Future<FetchedLibrary>>();
+        var futureFetchedLibraries = new HashMap<Library, Future<Path>>();
         if (this.includeLibraries) {
             selectedDependencies.forEach(dependency -> {
                 futureFetchedLibraries.put(
                         dependency.library(),
                         this.executorService.submit(() ->
-                                new FetchedLibrary(
-                                        dependency.coordinate().getLibraryLocation(this.cache),
-                                        dependency.usages()
-                                )
+                                dependency.coordinate().getLibraryLocation(this.cache)
                         )
                 );
             });
@@ -143,7 +140,7 @@ public final class Fetch {
         }
 
 
-        var libraries = new HashMap<Library, FetchedLibrary>();
+        var libraries = new HashMap<Library, Path>();
         futureFetchedLibraries.forEach((k, v) -> {
             try {
                 libraries.put(k, v.get());
@@ -179,33 +176,14 @@ public final class Fetch {
     }
 
     public record Result(
-            Map<Library, FetchedLibrary> fetchedLibraries,
+            Map<Library, Path> libraries,
             Map<Library, Path> sources,
             Map<Library, Path> documentation
     ) {
         public Result {
-            Objects.requireNonNull(fetchedLibraries);
+            Objects.requireNonNull(libraries);
             Objects.requireNonNull(sources);
             Objects.requireNonNull(documentation);
-        }
-
-        public Map<Library, Path> libraries() {
-            return fetchedLibraries.entrySet()
-                    .stream()
-                    .collect(Collectors.toMap(
-                            Map.Entry::getKey,
-                            entry -> entry.getValue().path()
-                    ));
-        }
-
-        public String path(Usage usage, List<Path> extraPaths) {
-            return Stream.concat(
-                    fetchedLibraries.values().stream()
-                            .filter(fetchedLibrary -> fetchedLibrary.usages().contains(usage))
-                            .map(FetchedLibrary::path)
-                            .map(Path::toString),
-                    extraPaths.stream().map(Path::toString)
-            ).collect(Collectors.joining(File.pathSeparator));
         }
 
         public String path(List<Path> extraPaths) {

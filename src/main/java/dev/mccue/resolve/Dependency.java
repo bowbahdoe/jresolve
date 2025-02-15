@@ -6,36 +6,30 @@ import dev.mccue.resolve.maven.MavenCoordinate;
 import dev.mccue.resolve.maven.MavenRepository;
 import dev.mccue.resolve.maven.Scope;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 public record Dependency(
         Library library,
         Coordinate coordinate,
-        Exclusions exclusions,
-        Usages usages
+        Exclusions exclusions
 ) {
     public Dependency(
             Library library,
             Coordinate coordinate,
-            Exclusions exclusions,
-            Usages usages
+            Exclusions exclusions
     ) {
         this.library = Objects.requireNonNull(library, "library must not be null.");
         this.coordinate = Objects.requireNonNull(coordinate, "coordinate must not be null.");
         this.exclusions = Objects.requireNonNull(exclusions, "exclusions must not be null.");
-        this.usages = Objects.requireNonNull(usages, "usages must not be null");
     }
 
     public Dependency(Library library, Coordinate coordinate) {
         this(library, coordinate, Exclusions.NONE);
-    }
-
-    public Dependency(Library library, Coordinate coordinate, Usages usages) {
-        this(library, coordinate, Exclusions.NONE, usages);
-    }
-
-    public Dependency(Library library, Coordinate coordinate, Exclusions exclusions) {
-        this(library, coordinate, exclusions, Usages.unspecified());
     }
 
     public static Dependency maven(
@@ -105,24 +99,21 @@ public record Dependency(
         );
     }
 
+    private static final Map<String, MavenRepository> DEFAULT_REPOSITORIES = Map.of(
+            "central", MavenRepository.central(),
+            "local", MavenRepository.local()
+    );
+
     public static Dependency fromPackageUrl(
             PackageUrl packageUrl
     ) {
-        return fromPackageUrl(packageUrl, Map.of("central", MavenRepository.central()));
+        return fromPackageUrl(packageUrl, DEFAULT_REPOSITORIES);
     }
+
 
     public static Dependency fromPackageUrl(
             PackageUrl packageUrl,
             Map<String, MavenRepository> knownRepositories
-    ) {
-        return fromPackageUrl(packageUrl, knownRepositories, Usages.unspecified());
-    }
-
-
-    public static Dependency fromPackageUrl(
-            PackageUrl packageUrl,
-            Map<String, MavenRepository> knownRepositories,
-            Usages defaultUsage
     ) {
         if (!packageUrl.getType().equals("maven")) {
             throw new IllegalArgumentException(packageUrl.getType() + " is not a supported package url type.");
@@ -133,7 +124,6 @@ public record Dependency(
         var version = new Version(Objects.requireNonNull(packageUrl.getVersion(), "Package url must have a version"));
 
         var repositoryNames = List.of("central");
-        var usage = defaultUsage;
         String classifierStr = null;
 
         var qualifiers = packageUrl.getQualifiers();
@@ -146,14 +136,6 @@ public record Dependency(
             var classifierQualifier = qualifiers.get("classifier");
             if (classifierQualifier != null && !classifierQualifier.equals("default")) {
                 classifierStr = classifierQualifier;
-            }
-
-            var usageQualifier = qualifiers.get("usage");
-            if (usageQualifier != null) {
-                var usagesArray = usageQualifier.split(",");
-                var usageList = new ArrayList<Usage>();
-                Arrays.stream(usagesArray).map(Usage::new).forEach(usageList::add);
-                usage = Usages.specified(usageList);
             }
         }
 
@@ -186,7 +168,51 @@ public record Dependency(
                 Classifier.JAVADOC
         );
 
-        return new Dependency(library, coordinate, usage);
+        return new Dependency(library, coordinate);
+    }
+
+    public static Dependency fromCoordinate(
+            String coordinate
+    ) {
+        return fromCoordinate(coordinate, DEFAULT_REPOSITORIES);
+    }
+
+    public static Dependency fromCoordinate(
+            String coordinate,
+            Map<String, MavenRepository> knownRepositories
+    ) {
+        if (coordinate.startsWith("pkg:")) {
+            return fromPackageUrl(PackageUrl.parse(coordinate), knownRepositories);
+        } else {
+            if (coordinate.startsWith("file:///")) {
+                var library = new Library(new Group(""), new Artifact(coordinate));
+                return new Dependency(
+                        library,
+                        new URICoordinate(URI.create(coordinate))
+                );
+            } else if (coordinate.startsWith("file:")) {
+                throw new IllegalArgumentException("File URLs must start with file:///");
+            } else if (coordinate.startsWith("https://")) {
+                var library = new Library(new Group(""), new Artifact(coordinate));
+                return new Dependency(
+                        library,
+                        new HttpsCoordinate(
+                                HttpClient.newBuilder()
+                                        .followRedirects(HttpClient.Redirect.NORMAL)
+                                        .build(),
+                                URI.create(coordinate)
+                        )
+                );
+            } else if (coordinate.contains(":")) {
+                throw new IllegalArgumentException(coordinate.split(":")[0] + " is not a supported protocol.");
+            } else {
+                var library = new Library(new Group(""), new Artifact(coordinate));
+                return new Dependency(
+                        library,
+                        new PathCoordinate(Path.of(coordinate))
+                );
+            }
+        }
     }
 
     public Dependency withExclusions(Exclusions exclusions) {

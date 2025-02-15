@@ -6,7 +6,7 @@
 
     <groupId>dev.mccue</groupId>
     <artifactId>resolve</artifactId>
-    <version>2025.02.12</version>
+    <version>2025.02.14</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -54,6 +54,12 @@
             <groupId>dev.mccue</groupId>
             <artifactId>purl</artifactId>
             <version>2023.11.07</version>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.mccue</groupId>
+            <artifactId>guava-graph</artifactId>
+            <version>33.4.0</version>
         </dependency>
 
         <dependency>
