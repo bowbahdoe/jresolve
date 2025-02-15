@@ -1,7 +1,12 @@
 package dev.mccue.resolve;
 
+import dev.mccue.guava.graph.Graph;
+import dev.mccue.guava.graph.GraphBuilder;
+import dev.mccue.guava.graph.Graphs;
+import dev.mccue.guava.graph.MutableGraph;
 import dev.mccue.resolve.maven.MavenCoordinateId;
 import dev.mccue.resolve.util.LL;
+import org.jspecify.annotations.Nullable;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -11,6 +16,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public final class Resolve {
     private final LinkedHashMap<Library, Dependency> dependencies;
@@ -82,14 +88,56 @@ public final class Resolve {
     public static final class Result {
         private final VersionMap versionMap;
         private final Trace trace;
+        private final MutableGraph<Library> libraryGraph;
 
-        private Result(VersionMap versionMap, Trace trace) {
+        private Result(VersionMap versionMap, Trace trace, MutableGraph<Library> libraryGraph) {
             this.versionMap = versionMap;
             this.trace = trace;
+            this.libraryGraph = libraryGraph;
         }
 
         VersionMap versionMap() {
             return versionMap;
+        }
+
+        public Map<Usage, Set<Library>> librariesForUsage(
+                Map<Library, Set<Usage>> knownUsages,
+                @Nullable Usage defaultUsage
+        ) {
+            knownUsages = new HashMap<>(knownUsages);
+            knownUsages.entrySet().removeIf(entry -> entry.getValue().isEmpty());
+
+            Map<Usage, Set<Library>> usageToLibrary = new LinkedHashMap<>();
+
+            knownUsages.forEach((library, usages) -> {
+                usages.forEach(usage -> {
+                    usageToLibrary.putIfAbsent(usage, new LinkedHashSet<>());
+                    usageToLibrary.get(usage).add(library);
+
+                    var successors = Graphs.reachableNodes(libraryGraph, library);
+                    for (var successor : successors) {
+                        usageToLibrary.get(usage).add(successor);
+                    }
+                });
+            });
+
+            var librariesWithNoKnownUsage = new LinkedHashSet<>(versionMap.selectedLibraries());
+            usageToLibrary.values().forEach(librariesWithNoKnownUsage::removeAll);
+
+            if (!librariesWithNoKnownUsage.isEmpty() && defaultUsage == null) {
+                throw new IllegalArgumentException("Libraries not given a usage: " + librariesWithNoKnownUsage);
+            }
+
+            for (var library : librariesWithNoKnownUsage) {
+                usageToLibrary.putIfAbsent(defaultUsage, new LinkedHashSet<>());
+                usageToLibrary.get(defaultUsage).add(library);
+            }
+
+            for (var entry : usageToLibrary.entrySet()) {
+                entry.setValue(Collections.unmodifiableSet(entry.getValue()));
+            }
+
+            return Collections.unmodifiableMap(usageToLibrary);
         }
 
         record ExclusionsUpdate(
@@ -133,6 +181,9 @@ public final class Resolve {
                 Cache cache,
                 ExecutorService executorService
         ) {
+            MutableGraph<Library> libraryGraph = GraphBuilder.directed()
+                    .allowsSelfLoops(true)
+                    .build();
             var cut = new HashMap<DependencyId, Exclusions>();
             record QueueEntry(
                     Dependency dependency,
@@ -145,7 +196,7 @@ public final class Resolve {
             initialDependencies.forEach((library, dependency) -> {
                 q.add(
                         new QueueEntry(
-                                new Dependency(library, dependency.coordinate(), dependency.exclusions(), dependency.usages()),
+                                new Dependency(library, dependency.coordinate(), dependency.exclusions()),
                                 new LL.Nil<>(),
                                 executorService.submit(() -> dependency.coordinate().getManifest(cache))
                         )
@@ -160,6 +211,7 @@ public final class Resolve {
                 var queueEntry = q.poll();
 
                 var library = queueEntry.dependency.library();
+
                 var dependency = overrideDependencies.getOrDefault(
                         library,
                         queueEntry.dependency
@@ -207,10 +259,12 @@ public final class Resolve {
                             .dependencies()
                             .stream()
                             .filter(dep -> exclusions.shouldInclude(dep.library()))
-                            .map(dep -> dep.withExclusions(dep.exclusions().join(exclusions)))
+                            .map(dep -> dep
+                                    .withExclusions(dep.exclusions().join(exclusions)))
                             .toList();
 
                     for (var manifestDep : afterExclusions) {
+                        libraryGraph.putEdge(library, manifestDep.library());
                         q.add(new QueueEntry(
                                 manifestDep,
                                 queueEntry.path.prepend(new DependencyId(queueEntry.dependency)),
@@ -223,7 +277,8 @@ public final class Resolve {
 
             return new Result(
                     versionMap,
-                    trace
+                    trace,
+                    libraryGraph
             );
         }
 
@@ -281,17 +336,24 @@ public final class Resolve {
                     }
                 }
 
-                out.print(entry.library().group().value());
-                out.print("/");
+                if (!"".equals(entry.library().group().value())) {
+                    out.print(entry.library().group().value());
+                    out.print("/");
+                }
                 out.print(entry.library().artifact().value());
 
                 out.print(" ");
                 if (entry.coordinateId() instanceof MavenCoordinateId mavenCoordinateId) {
                     out.print(mavenCoordinateId.version());
                 }
-                else {
+                else if (!(
+                        entry.coordinateId() instanceof HttpsCoordinate
+                                || entry.coordinateId() instanceof URICoordinate
+                                || entry.coordinateId() instanceof PathCoordinate
+                )) {
                     out.print(entry.coordinateId());
                 }
+
                 if (!entry.inclusionDecision().included() && !Set.of(
                         InclusionDecision.SAME_VERSION,
                         InclusionDecision.NEW_DEP

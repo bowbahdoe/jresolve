@@ -1,6 +1,7 @@
 module dev.mccue.resolve {
     requires static org.jspecify;
-    requires static dev.mccue.purl;
+    requires dev.mccue.purl;
+    requires dev.mccue.guava.graph;
 
     requires java.xml;
     requires transitive java.net.http;

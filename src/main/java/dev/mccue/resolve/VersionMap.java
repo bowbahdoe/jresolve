@@ -102,6 +102,13 @@ final class VersionMap {
                 .toList();
     }
 
+    List<Library> selectedLibraries() {
+        return selectedDependencies()
+                .stream()
+                .map(Dependency::library)
+                .toList();
+    }
+
     public Optional<List<LL<DependencyId>>> selectedPaths(Library library) {
         var entry = this.value.get(library);
         if (entry == null) {
